@@ -7,6 +7,14 @@ import { createClient } from "@/lib/supabase/server";
 const back = (kind: "error" | "message", text: string): never =>
   redirect(`/login?${kind}=${encodeURIComponent(text)}`);
 
+const SIGNUP_ERRORS: Record<string, string> = {
+  signup_disabled: "Kayıtlar şu an kapalı. Hesap için davet gerekiyor.",
+  over_email_send_rate_limit: "E-posta gönderim sınırına takıldık. Bir saat kadar sonra tekrar dene.",
+  over_request_rate_limit: "Çok fazla deneme yapıldı. Biraz bekleyip tekrar dene.",
+  weak_password: "Şifre çok zayıf. Daha uzun ya da daha karışık bir şifre dene.",
+  email_address_invalid: "Bu e-posta adresi geçersiz görünüyor.",
+};
+
 function credentials(form: FormData) {
   return {
     email: String(form.get("email") ?? "").trim(),
@@ -36,7 +44,11 @@ export async function signUp(form: FormData) {
     password,
     options: { emailRedirectTo: `${origin}/auth/confirm` },
   });
-  if (error) back("error", "Kayıt yapılamadı. Kayıtlar kapalı olabilir ya da bu e-posta zaten kullanımda.");
+  if (error) {
+    // Gerçek neden sunucu günlüğünde; kullanıcıya yalnızca hesap varlığını sızdırmayan nedenler söylenir.
+    console.error("signUp başarısız:", error.code, error.status);
+    back("error", SIGNUP_ERRORS[error.code ?? ""] ?? "Kayıt yapılamadı. Biraz sonra tekrar dene.");
+  }
 
   // E-posta doğrulaması açıksa oturum hemen açılmaz.
   if (!data.session) back("message", "Doğrulama bağlantısını e-postana gönderdik. Bağlantıya tıkladıktan sonra giriş yap.");

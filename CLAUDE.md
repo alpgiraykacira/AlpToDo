@@ -113,17 +113,21 @@ Yapıldı:
   görmedi (RLS izolasyonu gerçek projede de çalışıyor).
 
 **Yapılmadı:**
-- **Gerçek Supabase'te hâlâ denenmeyenler:** Vercel'deki adresle doğrulama bağlantısı, özel SMTP, çok cihaz.
-- Vercel yayını yapılmadı.
+- **Yayın (`https://alptodo.vercel.app`) yapıldı;** `curl` ile `/` → `/login` yönlendirmesi, güvenlik başlıkları ve
+  `/auth/confirm` hata yolu görüldü. Yayında giriş, görev ekleme ve yenilemeden sonra verinin kalması kullanıcı
+  tarafından elle denendi, çalıştı. Yayın adresiyle gelen **doğrulama bağlantısı hâlâ denenmedi** (kayıt,
+  yerleşik SMTP'nin saatte 2 e-posta sınırına takıldı).
+- Özel SMTP kurulmadı. Yeni hesap için bir saat beklemek ya da Dashboard → Authentication → Users → Add user
+  (Auto Confirm) gerekir. Başka kullanıcı eklenecekse önce özel SMTP kur.
 - Çok cihazda canlı eşitleme, çevrimdışı kullanım, 2000+ öğede sayfalama yok (`load()` en fazla 2000 çeker).
 
 ## Bilinen eksikler / sıradaki adımlar
 
-1. Supabase'e gerçek bağlantı ve ilk uçtan uca deneme (yukarıdaki "yapılmadı" listesi).
-2. Vercel'e yayın: iki ortam değişkenini gir, yayın adresini Supabase Authentication → URL Configuration
-   (Site URL + Redirect URLs) ve (özel SMTP varsa) e-posta şablonuna (`{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`)
-   ekle. Varsayılan şablon da çalışır (`/auth/confirm` `code` parametresini karşılar); ama varsayılan SMTP'nin
-   saatlik gönderim sınırı çok düşük, arkadaşlar için özel SMTP gerekecek. İlk hesaptan sonra yeni kayıtları kapat.
+1. Yayında kayıt + doğrulama bağlantısını dene (SMTP sınırı dolunca ya da özel SMTP ile).
+2. Arkadaşlar eklenecekse: özel SMTP (Brevo ya da uygulama parolalı Gmail/iCloud; Resend alan adı ister), sonra
+   (isteğe bağlı) Confirm signup şablonu `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`.
+   Varsayılan şablon da çalışır (`/auth/confirm` `code` parametresini karşılar). İlk hesaplardan sonra yeni
+   kayıtları kapat. Vercel işlevleri için bölgeyi Supabase'e yakın (Frankfurt/`fra1`) seçmek isteğe bağlı.
 3. **Analiz ekranını `item_events`'e bağla.** Şu an önceki 7 haftanın çubukları örnek veri (`Insights.tsx`,
    `SAMPLE_HISTORY`). "Son 7 gün" sayısı gerçek.
 4. Gerçek uçtan uca şifreleme (gizli notlar için; sunucu tarafı arama/analiz bu notlarda çalışmaz).
