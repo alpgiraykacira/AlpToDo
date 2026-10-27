@@ -4,6 +4,9 @@ import type { Store } from "./types";
 
 const KEY = "sira.demo.v1";
 
+/** Önceki yedi haftanın örnek değerleri (eskiden yeniye). */
+const SAMPLE_HISTORY = [5, 8, 7, 10, 6, 11, 9];
+
 /** Silinenler de saklanır (geri alınabilsin diye), Supabase'deki deleted_at gibi. */
 type Stored = Item & { deleted?: boolean };
 
@@ -53,6 +56,10 @@ export function demoStore(): Store {
         return next;
       });
       write(items);
+    },
+    async doneHistory(weeks) {
+      // Demo verisinde olay kaydı yok; grafik örnek değerlerle çizilir.
+      return { weeks: SAMPLE_HISTORY.slice(-weeks), sample: true };
     },
     async reset() {
       items = seedItems();

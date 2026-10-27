@@ -52,7 +52,7 @@ Arayüz geliştirirken en hızlı yol bu.
   türetilir (ayrı etiket tablosu yok; yeniden adlandırma için ileride bir SQL fonksiyonu gerekir).
   Yumuşak silme: `deleted_at`. Tekrar kuralı: `recurrence jsonb`.
 - `item_events`: durum, öncelik, tarih, etiket, `recurred`/`recurred_undone`, silme geçmişi. Analiz
-  ekranı bunu kullanacak (henüz bağlı değil).
+  ekranının haftalık tamamlanan grafiği bunu kullanıyor (`Store.doneHistory`, hesap `src/lib/insights.ts`).
 - Trigger'lar: `items_before_write` (updated_at, completed_at, last_done_at'i sunucu belirler),
   `items_log_events` (olay kaydı, `security definer`).
 - Yeni tabloya her zaman RLS aç, `anon` yetkisini kaldır, `authenticated`'a yalnızca gerekeni ver
@@ -70,6 +70,7 @@ src/lib/views.ts        görünümlerin gruplanması (Inbox, Bugün, Yaklaşan, 
 src/lib/capture.ts      hızlı ekleme ayrıştırıcısı
 src/lib/labels.ts       etiket eşleştirme (norm/canonicalLabel)
 src/lib/recurrence.ts   sonraki tarih hesabı (saf fonksiyonlar, testli)
+src/lib/insights.ts     item_events'ten haftalık tamamlanan sayısı (weeklyDone, saf, testli)
 src/lib/store/          Store arayüzü: supabase.ts (gerçek) ve demo.ts (localStorage). rows.ts = satır eşlemesi
 src/lib/useItems.ts     iyimser güncelleme, debounce'lu yazma, hatada geri alma
 src/components/         App (durum + yerleşim), Sidebar, Capture, ListView, Board, Detail, Insights, Palette
@@ -100,7 +101,7 @@ Veri katmanı `Store` arayüzünün arkasında; bileşenler Supabase'i doğrudan
 ## Test durumu: dürüst özet
 
 Yapıldı:
-- Tekrar tarihi hesabı: 13 birim testi (`npm test`).
+- Tekrar tarihi hesabı: 13 birim testi, haftalık tamamlanan hesabı: 9 birim testi (`npm test`).
 - Migration + RLS + trigger'lar **gerçek Postgres 16**'da (`npm run test:db`): başka kullanıcının veriyi
   görememesi/yazamaması, sunucu tarafı zaman damgaları, olay kayıtları, kısıtlar. RLS bilerek bozulunca
   testin başarısız olduğu görüldü.
@@ -128,8 +129,11 @@ Yapıldı:
    (isteğe bağlı) Confirm signup şablonu `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`.
    Varsayılan şablon da çalışır (`/auth/confirm` `code` parametresini karşılar). İlk hesaplardan sonra yeni
    kayıtları kapat. Vercel işlevleri için bölgeyi Supabase'e yakın (Frankfurt/`fra1`) seçmek isteğe bağlı.
-3. **Analiz ekranını `item_events`'e bağla.** Şu an önceki 7 haftanın çubukları örnek veri (`Insights.tsx`,
-   `SAMPLE_HISTORY`). "Son 7 gün" sayısı gerçek.
+3. **Analiz ekranı `item_events`'e bağlandı** (önceki 7 hafta). Gerçek projede sorgu hatasız döndü, ama olaylar
+   dünden beri biriktiği için çubuklar henüz 0: sıfırdan farklı geçmiş değerler gerçek veride **görülmedi**
+   (mantık birim testlerle kanıtlı). Bilinen sınırlar: "Son 7 gün" yalnızca silinmemiş öğeleri sayar, geçmiş haftalar
+   silinenleri de sayar; PostgREST tek istekte 1000 satır verir, fazla olayda en eski haftalar eksik kalır.
+   Demo modunda geçmiş örnek veridir. Sıradaki analizler (`Insights.tsx` altındaki liste) henüz yok.
 4. Gerçek uçtan uca şifreleme (gizli notlar için; sunucu tarafı arama/analiz bu notlarda çalışmaz).
 5. TOTP/passkey arayüzü, CSP başlığı (nonce gerekir), etiket yeniden adlandırma, hesap silme.
 

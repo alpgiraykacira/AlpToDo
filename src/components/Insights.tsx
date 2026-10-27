@@ -1,14 +1,29 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { addDays, dayDiff, fmtDate, localDay } from "@/lib/dates";
 import { labelCounts } from "@/lib/labels";
 import { isOpen } from "@/lib/rules";
+import type { Store } from "@/lib/store/types";
 import type { Item } from "@/lib/types";
 
-/** Önceki yedi haftanın örnek değerleri. Gerçek veri item_events tablosundan gelecek. */
-const SAMPLE_HISTORY = [5, 8, 7, 10, 6, 11, 9];
+const HISTORY_WEEKS = 7;
 
-export function Insights({ items }: { items: Item[] }) {
+type History = { state: "loading" } | { state: "error" } | { state: "ready"; weeks: number[]; sample: boolean };
+
+export function Insights({ items, store }: { items: Item[]; store: Store }) {
+  const [history, setHistory] = useState<History>({ state: "loading" });
+  useEffect(() => {
+    let cancelled = false;
+    store
+      .doneHistory(HISTORY_WEEKS)
+      .then((h) => !cancelled && setHistory({ state: "ready", ...h }))
+      .catch(() => !cancelled && setHistory({ state: "error" }));
+    return () => {
+      cancelled = true;
+    };
+  }, [store]);
+
   const triaged = items.filter((i) => !i.inbox);
   const open = triaged.filter(isOpen);
   const late = open.filter((i) => i.due && dayDiff(i.due) < 0).length;
@@ -25,7 +40,8 @@ export function Insights({ items }: { items: Item[] }) {
     (i) => (i.status === "done" && inWindow(i.completedAt)) || (i.recurrence !== null && inWindow(i.lastDoneAt)),
   ).length;
 
-  const values = [...SAMPLE_HISTORY, current];
+  const previous = history.state === "ready" ? history.weeks : new Array<number>(HISTORY_WEEKS).fill(0);
+  const values = [...previous, current];
   const max = Math.max(10, Math.ceil(Math.max(...values) / 5) * 5);
   const ticks: number[] = [];
   for (let v = 0; v <= max; v += 5) ticks.push(v);
@@ -69,8 +85,11 @@ export function Insights({ items }: { items: Item[] }) {
             </div>
           </div>
           <div className="note">
-            Önceki 7 haftalık çubuklar örnek veridir. Durum değişiklikleri veritabanında item_events tablosuna
-            yazılıyor; bu grafik bir sonraki adımda oradan beslenecek.
+            {history.state === "loading" && "Geçmiş haftalar yükleniyor…"}
+            {history.state === "error" && "Geçmiş haftalar yüklenemedi; yalnızca son 7 gün gerçek."}
+            {history.state === "ready" && history.sample && "Önceki 7 haftalık çubuklar örnek veridir (demo modunda olay kaydı yok)."}
+            {history.state === "ready" && !history.sample &&
+              "Önceki haftalar durum değişikliği kayıtlarından gelir; kayıt tutulmadan önceki haftalar boş görünür."}
           </div>
         </div>
         <div className="panel">
