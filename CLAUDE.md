@@ -136,5 +136,6 @@ Yapıldı:
   değiştirmek kullanıcının demo verisini ve tema tercihini sıfırlar.
 - `node --test` TypeScript'i doğrudan çalıştırır; bu yüzden test dosyaları ve `recurrence.ts` içe aktarmalarında
   `.ts` uzantısı var ve `tsconfig.json`'da `allowImportingTsExtensions` açık.
-- Commit yazarı şimdilik varsayılan kimlik. Kullanıcı kendi adıyla görünmek isterse GitHub kullanıcı adını
-  ve (varsa) `noreply` e-postasını sormak gerekir; iş e-postasını varsayma.
+- Commit kimliği repoya yerel git yapılandırmasında: GitHub kullanıcı adı `alpgiraykacira` ve `noreply`
+  e-postası. İş e-postasını kullanma. İlk commit (`bd273df`) `Claude <noreply@anthropic.com>` yazarıyla
+  duruyor; zaten push edilmişti, yeniden yazmak force push gerektirir.
