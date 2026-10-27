@@ -55,8 +55,12 @@ yalnızca tarayıcının `localStorage`'ında durur. Arayüzü denemek içindir,
    **service_role / secret key'i bu projeye koyma.** Uygulama onu hiç kullanmaz.
 4. Authentication ayarları (Dashboard → Authentication):
    - **URL Configuration:** Site URL'ini ve (Vercel'e çıkınca) production adresini Redirect URLs'e ekle.
-   - **Email templates → Confirm signup:** bağlantıyı şu biçime çevir:
-     `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`
+   - **Email templates → Confirm signup:** şablonu düzenlemek özel SMTP gerektirir. Varsayılan şablonla da
+     çalışır: `/auth/confirm` hem varsayılan bağlantıdaki `code` parametresini hem de özelleştirilmiş
+     şablonun `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email` biçimini karşılar.
+     Varsayılan akışta bağlantı, kayıt olunan tarayıcıda açılmalı (PKCE çerezi orada).
+   - Redirect URLs'e `/auth/confirm` yolunu içeren adresi ekle (örn. `http://localhost:3000/**`); listede yoksa
+     Supabase bağlantıyı Site URL'ye yönlendirir.
    - **İlk hesabını oluşturduktan sonra** Providers → Email → "Allow new users to sign up" seçeneğini kapat.
      Arkadaşlarını davet etmek istediğinde Dashboard'dan davet et ya da geçici olarak aç.
    - İsteğe bağlı: Authentication → Multi-Factor'dan TOTP'yi aç (arayüzü henüz yok, aşağıya bak).
