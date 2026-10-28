@@ -5,27 +5,30 @@ import { labelCounts } from "@/lib/labels";
 import { isOpen } from "@/lib/rules";
 import type { Item } from "@/lib/types";
 
-/** Önceki yedi haftanın örnek değerleri. Gerçek veri item_events tablosundan gelecek. */
-const SAMPLE_HISTORY = [5, 8, 7, 10, 6, 11, 9];
+/** Grafikte gösterilen hafta sayısı (son 7 gün dahil). */
+const WEEKS = 8;
 
 export function Insights({ items }: { items: Item[] }) {
   const triaged = items.filter((i) => !i.inbox);
   const open = triaged.filter(isOpen);
   const late = open.filter((i) => i.due && dayDiff(i.due) < 0).length;
   const p1 = open.filter((i) => i.priority === 1).length;
-  const lo = addDays(-6);
-  const hi = addDays(0);
-  // Biten görevler + bu pencerede tamamlanan tekrarlayanlar (her biri bir kez sayılır).
-  const inWindow = (ts: string | null) => {
-    if (!ts) return false;
-    const d = localDay(ts);
-    return d >= lo && d <= hi;
+  // Biten görevler + o haftada tamamlanan tekrarlayanlar (her biri bir kez sayılır).
+  // Tekrarlayanlarda yalnızca son tamamlanma bilinir; eski oluşumlar item_events gelince eklenecek.
+  const countWeek = (w: number) => {
+    const lo = addDays(-6 - 7 * w);
+    const hi = addDays(-7 * w);
+    const inWindow = (ts: string | null) => {
+      if (!ts) return false;
+      const d = localDay(ts);
+      return d >= lo && d <= hi;
+    };
+    return triaged.filter(
+      (i) => (i.status === "done" && inWindow(i.completedAt)) || (i.recurrence !== null && inWindow(i.lastDoneAt)),
+    ).length;
   };
-  const current = triaged.filter(
-    (i) => (i.status === "done" && inWindow(i.completedAt)) || (i.recurrence !== null && inWindow(i.lastDoneAt)),
-  ).length;
-
-  const values = [...SAMPLE_HISTORY, current];
+  const values = Array.from({ length: WEEKS }, (_, k) => countWeek(WEEKS - 1 - k));
+  const current = values[WEEKS - 1];
   const max = Math.max(10, Math.ceil(Math.max(...values) / 5) * 5);
   const ticks: number[] = [];
   for (let v = 0; v <= max; v += 5) ticks.push(v);
@@ -69,8 +72,8 @@ export function Insights({ items }: { items: Item[] }) {
             </div>
           </div>
           <div className="note">
-            Önceki 7 haftalık çubuklar örnek veridir. Durum değişiklikleri veritabanında item_events tablosuna
-            yazılıyor; bu grafik bir sonraki adımda oradan beslenecek.
+            Çubuklar gerçek verindir: görevlerin tamamlanma tarihine göre sayılır. Tekrarlayan görevlerde yalnızca
+            son tamamlanma görünür; tam geçmiş bir sonraki adımda item_events tablosundan gelecek.
           </div>
         </div>
         <div className="panel">
