@@ -16,6 +16,11 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  // Tarayıcı çubuğu uygulama zeminiyle (--canvas) aynı renkte olsun.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#E9ECF0" },
+    { media: "(prefers-color-scheme: dark)", color: "#0A0D10" },
+  ],
 };
 
 // Tema tercihi ilk boyamadan önce uygulanır (yanıp sönmeyi önler).
