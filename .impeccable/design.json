@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-28T00:00:00Z",
+  "title": "Design System: AlpToDo",
+  "extensions": {
+    "colorMeta": {
+      "accent": { "role": "primary", "displayName": "Derin Camgöbeği", "canonical": "#0B7A75", "tonalRamp": ["#04201E", "#0A4A47", "#0B7A75", "#38C2B8", "#7DD9D1", "#BDEBE6", "#DDF1EF", "#F0FAF9"] },
+      "canvas": { "role": "neutral", "displayName": "Soğuk Zemin", "canonical": "#E9ECF0", "tonalRamp": ["#0A0D10", "#151A21", "#3A4350", "#657082", "#98A2B0", "#C8CED6", "#E9ECF0", "#F5F6F8"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Sayfa başlığı ve istatistik sayıları." },
+      "label": { "displayName": "Label (mono)", "purpose": "Bölüm başlıkları, tarih, öncelik, etiket, kısayol." }
+    },
+    "shadows": [
+      { "name": "floating-palette", "value": "0 24px 64px var(--shadow)", "purpose": "Komut paleti." },
+      { "name": "floating-detail", "value": "-16px 0 40px var(--shadow)", "purpose": "Dar ekranda yüzen detay paneli." }
+    ],
+    "motion": [
+      { "name": "detail-in", "value": "180ms ease-out", "purpose": "Detay paneli girişi (reduced-motion dışında)." }
+    ],
+    "breakpoints": [
+      { "name": "detail-float", "value": "1179px" },
+      { "name": "mobile", "value": "820px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ana eylem (Ekle, Kaydet).",
+      "html": "<button class=\"ds-btn\">Ekle</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:8px;background:#0B7A75;color:#fff;padding:8px 14px;font:600 14.5px 'Instrument Sans Variable',system-ui,sans-serif;cursor:pointer}.ds-btn:hover{filter:brightness(1.08)}.ds-btn:focus-visible{outline:2px solid #0B7A75;outline-offset:2px}"
+    },
+    {
+      "name": "Hızlı Ekleme",
+      "kind": "input",
+      "refersTo": "capture-box",
+      "description": "Tek satırlık yakalama alanı.",
+      "html": "<div class=\"ds-cap\"><input placeholder=\"Haftalık rapor gönder her cuma !2 @rapor\"></div>",
+      "css": ".ds-cap{display:flex;align-items:center;border:1px solid #E1E4E9;background:#fff;border-radius:11px;padding:4px 4px 4px 14px}.ds-cap:focus-within{border-color:#0B7A75;box-shadow:0 0 0 3px #DDF1EF}.ds-cap input{flex:1;border:0;background:none;outline:none;padding:9px 0;font:14.5px 'Instrument Sans Variable',system-ui,sans-serif;color:#151A21}"
+    },
+    {
+      "name": "Gezinme Öğesi",
+      "kind": "nav",
+      "refersTo": "nav-item-current",
+      "description": "Kenar çubuğu, geçerli sayfa.",
+      "html": "<button class=\"ds-nav\" aria-current=\"page\">Bugün <span>3</span></button>",
+      "css": ".ds-nav{display:flex;align-items:center;gap:10px;width:200px;padding:7px 10px;border:0;border-radius:8px;background:#fff;box-shadow:0 0 0 1px #E1E4E9;font:600 14.5px 'Instrument Sans Variable',system-ui,sans-serif;color:#151A21;text-align:left}.ds-nav span{margin-left:auto;font:500 12px 'IBM Plex Mono',monospace;color:#657082}"
+    },
+    {
+      "name": "Etiket Chip'i",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Mono etiket.",
+      "html": "<span class=\"ds-chip\">@rapor</span>",
+      "css": ".ds-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #E1E4E9;background:#F5F6F8;border-radius:8px;padding:3px 9px;font:500 12px 'IBM Plex Mono',monospace;color:#151A21}"
+    },
+    {
+      "name": "Pano Kartı",
+      "kind": "card",
+      "refersTo": "board-card",
+      "description": "Sürüklenebilir görev kartı.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-t\">Haftalık rapor gönder</div><span class=\"ds-pr\">P2</span></div>",
+      "css": ".ds-card{width:230px;background:#fff;border:1px solid #E1E4E9;border-radius:9px;padding:10px 12px;font:14px 'Instrument Sans Variable',system-ui,sans-serif;color:#151A21;cursor:grab}.ds-card:hover{border-color:color-mix(in srgb,#0B7A75 55%,#E1E4E9)}.ds-t{font-weight:500}.ds-pr{display:inline-block;margin-top:8px;font:500 11px 'IBM Plex Mono',monospace;padding:1px 6px;border-radius:5px;color:#C96A12;background:color-mix(in srgb,#C96A12 14%,transparent)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Sessiz Çalışma Masası",
+    "overview": "Soğuk, açık gri bir zemin üzerinde beyaz bir çalışma yüzeyi; içerik öne çıkar, arayüz geri çekilir. Tek bir camgöbeği vurgu yalnızca şu anki durumu işaretler.",
+    "keyCharacteristics": [
+      "Düz yüzeyler, derinlik 1px çizgi ve ton farkıyla; gölge yalnızca yüzen katmanlarda.",
+      "Tek vurgu rengi; öncelik için ayrı küçük dört renkli aile.",
+      "Mono büyük harfli küçük etiketler bölüm ve sütun başlığı olarak.",
+      "Açık ve koyu tema eşit sınıf."
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "Camgöbeği tek vurgudur; bir ekranda aynı anda yalnızca şu anki şeyi işaretler.", "section": "colors" },
+      { "name": "The Priority Is Data Rule", "body": "Öncelik renkleri yalnızca öncelik ve gecikmeyi anlatır.", "section": "colors" },
+      { "name": "The Mono Is Metadata Rule", "body": "Mono yalnızca tarih, öncelik, sayaç, etiket, kısayol ve bölüm etiketi içindir.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Kartlar ve satırlar durağan hâlde gölgesizdir; gölge yüzen katmanın kanıtıdır.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do vurgu rengini yalnızca şu anki durumu işaretlemek için kullan.",
+      "Do meta bilgiyi mono ile yaz.",
+      "Do derinliği çizgi ve ton farkıyla kur; gölgeyi yüzen katmana sakla.",
+      "Do tüm etkileşimlerde görünür odak halkası ve klavye yolu bırak.",
+      "Do açık ve koyu temayı birlikte tasarla."
+    ],
+    "donts": [
+      "Don't öncelik renklerini süs ya da kategori rengi olarak kullanma.",
+      "Don't satırları ve statik kartları gölgelendirme.",
+      "Don't gizli notu şifrelenmiş gibi gösteren görsel dil kullanma.",
+      "Don't ikinci bir vurgu rengi ya da dekoratif gradyan ekleme."
+    ]
+  }
+}

@@ -8,3 +8,15 @@ next-env.d.ts
 .env.*.local
 .vercel
 .DS_Store
+
+# Claude Code yerel ayarları
+.claude/
+
+# Yerel Claude notları (test hesabı bilgisi içerir)
+CLAUDE.local.md
+
+# Impeccable: yerel önbellek ve çalışma dosyaları
+.impeccable/hook.cache.json
+.impeccable/live/roots.json
+.impeccable/live/sessions/
+.impeccable/critique/
