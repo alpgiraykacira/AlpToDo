@@ -84,6 +84,26 @@ export function parseCapture(raw: string, knownLabels: string[]): Parsed {
   return out;
 }
 
+/**
+ * Not ekleme: yalnızca `@etiket` (ve `#etiket`) ayrıştırılır. `!1`, "yarın", "her hafta" gibi
+ * görev sözdizimi başlıkta olduğu gibi kalır; not hiçbir zaman göreve dönüşmez.
+ */
+export function parseNote(raw: string, knownLabels: string[]): Pick<Parsed, "title" | "labels" | "fresh"> {
+  const out = { title: "", labels: [] as string[], fresh: [] as string[] };
+  const t = (" " + raw + " ")
+    .replace(/\s[@#]([\p{L}\p{N}_-]+)(?=\s)/gu, (_, g: string) => {
+      const c = canonicalLabel(g, knownLabels);
+      if (!out.labels.includes(c.name)) {
+        out.labels.push(c.name);
+        if (c.fresh) out.fresh.push(c.name);
+      }
+      return " ";
+    })
+    .replace(/\s[@#]\s*$/, " ");
+  out.title = t.replace(/\s+/g, " ").trim();
+  return out;
+}
+
 /** Öncelik ya da tarih varsa görev, sadece etiket varsa not, hiçbiri yoksa Inbox. */
 export function captureDestination(p: Pick<Parsed, "priority" | "due" | "labels" | "recurrence">): "Görev" | "Not" | "Inbox" {
   if (p.priority || p.due || p.recurrence) return "Görev";
