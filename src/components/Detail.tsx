@@ -41,12 +41,18 @@ export function Detail({ item, knownLabels, onPatch, onStatus, onClose, onDelete
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const locked = item.secret && !revealed;
 
+  // Başlık hem yazılırken hem panel genişliği/yazı tipi değişince yeniden ölçülür (dar ekranda son satır kesilmesin).
   useLayoutEffect(() => {
     const t = titleRef.current;
-    if (t) {
+    if (!t) return;
+    const fit = () => {
       t.style.height = "auto";
       t.style.height = `${t.scrollHeight}px`;
-    }
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(t);
+    return () => ro.disconnect();
   }, [item.title]);
 
   const addLabel = () => {

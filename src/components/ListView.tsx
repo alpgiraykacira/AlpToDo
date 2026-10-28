@@ -47,21 +47,27 @@ function Side({ item, onTriage }: { item: Item; onTriage: (id: string, to: "toda
   );
 }
 
+export type Fresh = { id: string; kind: "new" | "done" | "moved" } | null;
+
 interface RowProps {
   item: Item;
   view: ViewKey;
   selected: boolean;
+  fresh: string;
   onOpen: (id: string) => void;
   onToggle: (id: string) => void;
   onTriage: (id: string, to: "today" | "note") => void;
 }
 
-function Row({ item, view, selected, onOpen, onToggle, onTriage }: RowProps) {
+function Row({ item, view, selected, fresh, onOpen, onToggle, onTriage }: RowProps) {
   const task = isTask(item);
   const note = !task && !item.inbox ? snippet(item) : "";
   return (
     <div
-      className={`row ${item.status === "done" ? "done" : ""} ${selected ? "sel" : ""}`}
+      className={`row ${item.status === "done" ? "done" : ""} ${selected ? "sel" : ""} ${fresh}`}
+      role="listitem"
+      data-rid={item.id}
+      aria-current={selected ? "true" : undefined}
       tabIndex={0}
       onClick={() => onOpen(item.id)}
       onKeyDown={(e) => {
@@ -103,12 +109,13 @@ interface ListViewProps {
   groups: Group[];
   view: ViewKey;
   selId: string | null;
+  fresh: Fresh;
   onOpen: (id: string) => void;
   onToggle: (id: string) => void;
   onTriage: (id: string, to: "today" | "note") => void;
 }
 
-export function ListView({ groups, view, selId, onOpen, onToggle, onTriage }: ListViewProps) {
+export function ListView({ groups, view, selId, fresh, onOpen, onToggle, onTriage }: ListViewProps) {
   const shown = groups.filter((g) => g.items.length);
   if (!shown.length) {
     const [title, hint] = EMPTY[view] ?? ["Burada bir şey yok", "Filtreleri gevşetmeyi dene."];
@@ -122,22 +129,25 @@ export function ListView({ groups, view, selId, onOpen, onToggle, onTriage }: Li
   return (
     <>
       {shown.map((g) => (
-        <section key={g.label} className="grp">
-          <h3 className={g.tone ?? ""}>
+        <section key={g.label} className="grp" aria-labelledby={`grp-${g.label}`}>
+          <h2 id={`grp-${g.label}`} className={g.tone ?? ""}>
             {g.label}
             <span>{g.items.length}</span>
-          </h3>
-          {g.items.map((item) => (
-            <Row
-              key={item.id}
-              item={item}
-              view={view}
-              selected={selId === item.id}
-              onOpen={onOpen}
-              onToggle={onToggle}
-              onTriage={onTriage}
-            />
-          ))}
+          </h2>
+          <div role="list" aria-labelledby={`grp-${g.label}`}>
+            {g.items.map((item) => (
+              <Row
+                key={item.id}
+                item={item}
+                view={view}
+                selected={selId === item.id}
+                fresh={fresh?.id === item.id ? `fresh-${fresh.kind}` : ""}
+                onOpen={onOpen}
+                onToggle={onToggle}
+                onTriage={onTriage}
+              />
+            ))}
+          </div>
         </section>
       ))}
     </>

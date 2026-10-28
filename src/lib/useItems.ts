@@ -43,15 +43,27 @@ export function useItems(store: Store, initial: Item[] | undefined, onError: (me
     [reload],
   );
 
+  // Aynı öğenin yazmaları sırayla gider: art arda gelen iki istek ters sırada tamamlanırsa
+  // eski değer yenisini ezer (ör. art arda eklenen kontrol listesi maddeleri).
+  const queue = useRef(new Map<string, Promise<void>>());
+  const enqueue = useCallback(
+    (id: string, fn: () => Promise<void>) => {
+      const next = (queue.current.get(id) ?? Promise.resolve()).then(() => write(fn));
+      queue.current.set(id, next);
+      return next;
+    },
+    [write],
+  );
+
   const flush = useCallback(
     (id: string) => {
       const p = pending.current.get(id);
       if (!p) return Promise.resolve();
       clearTimeout(p.timer);
       pending.current.delete(id);
-      return write(() => store.update(id, p.patch));
+      return enqueue(id, () => store.update(id, p.patch));
     },
-    [store, write],
+    [store, enqueue],
   );
 
   // Sekme kapanırken bekleyen yazmaları göndermeyi dener.
@@ -88,17 +100,17 @@ export function useItems(store: Store, initial: Item[] | undefined, onError: (me
         clearTimeout(existing.timer);
         pending.current.delete(id);
       }
-      void write(() => store.update(id, { ...(existing?.patch ?? {}), ...dbPatch }));
+      void enqueue(id, () => store.update(id, { ...(existing?.patch ?? {}), ...dbPatch }));
     },
-    [apply, flush, store, write],
+    [apply, flush, store, enqueue],
   );
 
   const create = useCallback(
     (item: Item) => {
       setItems((prev) => [item, ...prev]);
-      void write(() => store.create(item));
+      void enqueue(item.id, () => store.create(item));
     },
-    [store, write],
+    [store, enqueue],
   );
 
   /** Yumuşak siler; geri almak için `restore(item)` çağrılır. */
@@ -106,19 +118,19 @@ export function useItems(store: Store, initial: Item[] | undefined, onError: (me
     (id: string): Item | undefined => {
       const item = items.find((i) => i.id === id);
       if (!item) return undefined;
-      void flush(id).then(() => write(() => store.update(id, { deleted: true })));
+      void flush(id).then(() => enqueue(id, () => store.update(id, { deleted: true })));
       setItems((prev) => prev.filter((i) => i.id !== id));
       return item;
     },
-    [items, flush, store, write],
+    [items, flush, store, enqueue],
   );
 
   const restore = useCallback(
     (item: Item) => {
       setItems((prev) => [item, ...prev]);
-      void write(() => store.update(item.id, { deleted: false }));
+      void enqueue(item.id, () => store.update(item.id, { deleted: false }));
     },
-    [store, write],
+    [store, enqueue],
   );
 
   const reset = useCallback(async () => {

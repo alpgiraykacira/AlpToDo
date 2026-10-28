@@ -8,18 +8,19 @@ import { byPriority } from "@/lib/views";
 import type { Item, Status } from "@/lib/types";
 import { STATUS_LABEL } from "@/lib/types";
 import { Icon } from "./icons";
-import { Meta } from "./ListView";
+import { Meta, type Fresh } from "./ListView";
 
 const COLUMNS: Status[] = ["todo", "doing", "waiting", "done"];
 
 interface BoardProps {
   items: Item[];
   selId: string | null;
+  fresh: Fresh;
   onOpen: (id: string) => void;
   onMove: (id: string, status: Status) => void;
 }
 
-export function Board({ items, selId, onOpen, onMove }: BoardProps) {
+export function Board({ items, selId, fresh, onOpen, onMove }: BoardProps) {
   const [dragId, setDragId] = useState<string | null>(null);
   const [over, setOver] = useState<Status | null>(null);
   const tasks = items.filter((i) => !i.inbox && isTask(i));
@@ -48,17 +49,19 @@ export function Board({ items, selId, onOpen, onMove }: BoardProps) {
               setDragId(null);
             }}
           >
-            <h3>
+            <h2>
               {STATUS_LABEL[status]}
               <span>{list.length}</span>
-            </h3>
+            </h2>
             {list.map((item) => {
               const due = item.due ? dueLabel(item.due, item.status === "done") : null;
               return (
                 <div
                   key={item.id}
-                  className={`card ${dragId === item.id ? "drag" : ""} ${selId === item.id ? "sel" : ""}`}
+                  className={`card ${dragId === item.id ? "drag" : ""} ${selId === item.id ? "sel" : ""} ${fresh?.id === item.id ? `fresh-${fresh.kind}` : ""}`}
                   draggable
+                  data-rid={item.id}
+                  aria-current={selId === item.id ? "true" : undefined}
                   tabIndex={0}
                   onDragStart={(e) => {
                     e.dataTransfer.effectAllowed = "move";

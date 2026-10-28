@@ -71,9 +71,10 @@ src/lib/capture.ts      hızlı ekleme ayrıştırıcısı (`parseCapture`) ve n
 src/lib/labels.ts       etiket eşleştirme (norm/canonicalLabel)
 src/lib/recurrence.ts   sonraki tarih hesabı (saf fonksiyonlar, testli)
 src/lib/insights.ts     item_events'ten haftalık tamamlanan sayısı (weeklyDone, saf, testli)
+src/lib/cursor.ts       liste imleci: satır/kart odağı (data-rid), j/k ile gezinme; kısayollar App.tsx içinde, sayfa Shortcuts.tsx
 src/lib/store/          Store arayüzü: supabase.ts (gerçek) ve demo.ts (localStorage). rows.ts = satır eşlemesi
 src/lib/useItems.ts     iyimser güncelleme, debounce'lu yazma, hatada geri alma
-src/components/         App (durum + yerleşim), Sidebar, Capture, NoteCapture, ListView, Board, Detail, Insights, Palette
+src/components/         App (durum + yerleşim), Sidebar, Capture, NoteCapture, ListView, Board, Detail, Insights, Palette, Shortcuts
 ```
 
 Veri katmanı `Store` arayüzünün arkasında; bileşenler Supabase'i doğrudan çağırmaz.

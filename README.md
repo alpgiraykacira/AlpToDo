@@ -12,7 +12,7 @@ Next.js 16 (App Router) · TypeScript · Supabase (Postgres + Auth + RLS) · Ver
 |---|---|
 | `!1` … `!4` | Öncelik (P1 acil … P4 düşük) |
 | `@etiket` | Etiket. Var olanla eşleşir (büyük/küçük harf ve Türkçe karakter fark etmez), yoksa yeni oluşur. `Tab` otomatik tamamlar. |
-| `bugün` `yarın` `haftaya` `pzt` … `paz` | Bitiş tarihi (cümlenin sonunda) |
+| `dün` `bugün` `yarın` `haftaya` `pzt` … `paz` | Bitiş tarihi (cümlenin sonunda) |
 | `her gün` `her hafta` `her 2 hafta` `her ay` `her yıl` | Tekrar |
 | `her pzt` `her pzt,per` `her pazartesi ve perşembe` | Belirli günlerde tekrar |
 

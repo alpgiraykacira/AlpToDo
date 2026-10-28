@@ -32,7 +32,7 @@ const UNIT_WORDS = { gün: "day", hafta: "week", ay: "month", yıl: "year" } as 
  * Hızlı ekleme sözdizimi:
  *   !1..!4   öncelik
  *   @etiket  etiket (var olanla eşleşir, yoksa yeni oluşur). `#etiket` de kabul edilir.
- *   bugün | yarın | haftaya | pzt..paz   cümlenin sonunda tarih
+ *   dün | bugün | yarın | haftaya | pzt..paz   cümlenin sonunda tarih
  *   her gün | her hafta | her 2 hafta | her ay | her yıl | her pzt | her pzt,per   tekrar
  */
 export function parseCapture(raw: string, knownLabels: string[]): Parsed {
@@ -65,9 +65,10 @@ export function parseCapture(raw: string, knownLabels: string[]): Parsed {
     return " ";
   });
 
-  t = t.replace(/\s(bugün|yarın|haftaya|pzt|sal|çar|per|cum|cmt|paz)\s*$/i, (_, w: string) => {
+  t = t.replace(/\s(dün|bugün|yarın|haftaya|pzt|sal|çar|per|cum|cmt|paz)\s*$/i, (_, w: string) => {
     const word = lower(w);
-    if (word === "bugün") out.due = addDays(0);
+    if (word === "dün") out.due = addDays(-1);
+    else if (word === "bugün") out.due = addDays(0);
     else if (word === "yarın") out.due = addDays(1);
     else if (word === "haftaya") out.due = addDays(7);
     else {

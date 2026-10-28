@@ -50,6 +50,8 @@ export function Insights({ items, store }: { items: Item[]; store: Store }) {
   const past = history.state === "ready" ? history.weeks : null;
   const values = fromItems.map((n, k) => (past && k < WEEKS - 1 ? Math.max(n, past[k]) : n));
   const current = values[WEEKS - 1];
+  // Yalnızca "Son 7 gün" doluysa grafik tek çubuktan ibaret kalır; o zaman dürüst bir satır göster.
+  const hasPast = values.slice(0, -1).some((v) => v > 0);
   const max = Math.max(10, Math.ceil(Math.max(...values) / 5) * 5);
   const ticks: number[] = [];
   for (let v = 0; v <= max; v += 5) ticks.push(v);
@@ -72,7 +74,12 @@ export function Insights({ items, store }: { items: Item[]; store: Store }) {
       <div className="panels">
         <div className="panel wide">
           <h2>Haftalık tamamlanan görev</h2>
-          <div className="chart">
+          {!hasPast && (
+            <p className="note" style={{ marginTop: 0 }}>
+              Önceki haftalarda tamamlanan görev yok. Görevleri bitirdikçe haftalık çubuklar burada görünür.
+            </p>
+          )}
+          <div className="chart" hidden={!hasPast}>
             <div className="plot">
               {ticks.map((v) => (
                 <div key={v} className="gl" style={{ bottom: `${(v / max) * 100}%` }}><span>{v}</span></div>
@@ -81,7 +88,7 @@ export function Insights({ items, store }: { items: Item[]; store: Store }) {
                 {values.map((v, k) => (
                   <div key={k} className="bcol">
                     <div className={`bar ${k === last ? "cur" : ""}`} style={{ height: `${(v / max) * 100}%` }} />
-                    <span className="bv" style={{ bottom: `calc(${(v / max) * 100}% + 4px)` }}>{v}</span>
+                    {v > 0 && <span className="bv" style={{ bottom: `calc(${(v / max) * 100}% + 4px)` }}>{v}</span>}
                   </div>
                 ))}
               </div>
@@ -92,7 +99,7 @@ export function Insights({ items, store }: { items: Item[]; store: Store }) {
               ))}
             </div>
           </div>
-          <div className="note">
+          <div className="note" hidden={!hasPast && history.state !== "error"}>
             {history.state === "loading" && "Geçmiş haftalar yükleniyor; şimdilik yalnızca görevlerin tamamlanma tarihi sayılıyor."}
             {history.state === "error" && "Geçmiş kayıtları yüklenemedi; çubuklar yalnızca görevlerin tamamlanma tarihinden hesaplandı."}
             {history.state === "ready" && !history.weeks &&
