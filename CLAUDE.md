@@ -52,7 +52,7 @@ Arayüz geliştirirken en hızlı yol bu.
   türetilir (ayrı etiket tablosu yok; yeniden adlandırma için ileride bir SQL fonksiyonu gerekir).
   Yumuşak silme: `deleted_at`. Tekrar kuralı: `recurrence jsonb`.
 - `item_events`: durum, öncelik, tarih, etiket, `recurred`/`recurred_undone`, silme geçmişi. Analiz
-  ekranının önceki haftaları bunu kullanıyor (`Store.doneHistory`, hesap `src/lib/insights.ts`).
+  ekranının bugün dahil bütün haftaları bunu kullanıyor (`Store.doneHistory`, hesap `src/lib/insights.ts`).
 - Trigger'lar: `items_before_write` (updated_at, completed_at, last_done_at'i sunucu belirler),
   `items_log_events` (olay kaydı, `security definer`).
 - Yeni tabloya her zaman RLS aç, `anon` yetkisini kaldır, `authenticated`'a yalnızca gerekeni ver
@@ -70,7 +70,7 @@ src/lib/views.ts        görünümlerin gruplanması (Inbox, Bugün, Yaklaşan, 
 src/lib/capture.ts      hızlı ekleme ayrıştırıcısı (`parseCapture`) ve not ekleme ayrıştırıcısı (`parseNote`, yalnızca etiket)
 src/lib/labels.ts       etiket eşleştirme (norm/canonicalLabel)
 src/lib/recurrence.ts   sonraki tarih hesabı (saf fonksiyonlar, testli)
-src/lib/insights.ts     item_events'ten haftalık tamamlanan sayısı (weeklyDone, saf, testli)
+src/lib/insights.ts     item_events + olayı olmayan eski öğelerden haftalık tamamlanan sayısı (weeklyDone, saf, testli)
 src/lib/cursor.ts       liste imleci: satır/kart odağı (data-rid), j/k ile gezinme; kısayollar App.tsx içinde, sayfa Shortcuts.tsx
 src/lib/store/          Store arayüzü: supabase.ts (gerçek) ve demo.ts (localStorage). rows.ts = satır eşlemesi
 src/lib/useItems.ts     iyimser güncelleme, debounce'lu yazma, hatada geri alma
@@ -103,7 +103,7 @@ Veri katmanı `Store` arayüzünün arkasında; bileşenler Supabase'i doğrudan
 ## Test durumu: dürüst özet
 
 Yapıldı:
-- Tekrar tarihi hesabı: 13 birim testi, haftalık tamamlanan hesabı: 9 birim testi (`npm test`).
+- Tekrar tarihi hesabı: 13 birim testi, haftalık tamamlanan hesabı: 18 birim testi (`npm test`).
 - Migration + RLS + trigger'lar **gerçek Postgres 16**'da (`npm run test:db`): başka kullanıcının veriyi
   görememesi/yazamaması, sunucu tarafı zaman damgaları, olay kayıtları, kısıtlar. RLS bilerek bozulunca
   testin başarısız olduğu görüldü.
@@ -131,13 +131,12 @@ Yapıldı:
    (isteğe bağlı) Confirm signup şablonu `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`.
    Varsayılan şablon da çalışır (`/auth/confirm` `code` parametresini karşılar). İlk hesaplardan sonra yeni
    kayıtları kapat. Vercel işlevleri için bölgeyi Supabase'e yakın (Frankfurt/`fra1`) seçmek isteğe bağlı.
-3. **Analiz ekranı** 8 haftalık grafik: her hafta `items`'tan hesaplanır (biten görevler `completedAt`, tekrarlayanlar
-   son `lastDoneAt`). Önceki 7 haftada `item_events` varsa (`Store.doneHistory`; demo'da `null`) hafta başına
-   **olay sayısı ile öğe sayısının büyüğü** alınır: olay kaydı yeni tutulmaya başlandı, öncesi yalnızca öğelerde
-   var; olaylar da silinenleri ve tekrarlayanların eski oluşumlarını ekler. Bilinen sınırlar: "Son 7 gün"
-   tekrarlayanda yalnızca son tamamlamayı, silinenleri hiç saymaz; PostgREST tek istekte 1000 satır verir, fazla
-   olayda en eski haftalar eksik kalır. Demo yolu (yalnızca öğeler) arayüzde denendi; olay+öğe birleşimi (Supabase) arayüzde
-   **denenmedi**, sıfırdan farklı geçmiş değerler gerçek veride **görülmedi** (olay mantığı birim testli).
+3. **Analiz ekranı** 8 haftalık grafik: bugün dahil bütün haftalar `item_events`'ten hesaplanır.
+   `Store.doneHistory` sayfalayarak tamamlama/geri alma olaylarını döndürür (demo'da `null`).
+   `weeklyDone`, aynı tekrarlayan görevin her tamamlamasını ayrı sayar, geri alınanları düşer;
+   olay kaydı olmayan eski öğeleri son tamamlanma tarihinden ekler. Olayı olan öğe ikinci kez sayılmaz.
+   Silinen öğelerin olayları da korunur. Başarılı yazmalar `useItems.revision`'ı artırır; analiz açıksa
+   olaylar yazma bittikten sonra yeniden yüklenir. Demo'da yalnızca son tamamlanma bilinir.
    Sıradaki analizler (`Insights.tsx` altındaki liste) henüz yok.
 4. Gerçek uçtan uca şifreleme (gizli notlar için; sunucu tarafı arama/analiz bu notlarda çalışmaz).
 5. TOTP/passkey arayüzü, CSP başlığı (nonce gerekir), etiket yeniden adlandırma, hesap silme.
@@ -152,3 +151,4 @@ Yapıldı:
 - Commit kimliği repoya yerel git yapılandırmasında: GitHub kullanıcı adı `alpgiraykacira` ve `noreply`
   e-postası. İş e-postasını kullanma. İlk commit (`bd273df`) `Claude <noreply@anthropic.com>` yazarıyla
   duruyor; zaten push edilmişti, yeniden yazmak force push gerektirir.
+
