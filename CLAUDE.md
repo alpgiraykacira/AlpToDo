@@ -52,7 +52,7 @@ Arayüz geliştirirken en hızlı yol bu.
   türetilir (ayrı etiket tablosu yok; yeniden adlandırma için ileride bir SQL fonksiyonu gerekir).
   Yumuşak silme: `deleted_at`. Tekrar kuralı: `recurrence jsonb`.
 - `item_events`: durum, öncelik, tarih, etiket, `recurred`/`recurred_undone`, silme geçmişi. Analiz
-  ekranının haftalık tamamlanan grafiği bunu kullanıyor (`Store.doneHistory`, hesap `src/lib/insights.ts`).
+  ekranının önceki haftaları bunu kullanıyor (`Store.doneHistory`, hesap `src/lib/insights.ts`).
 - Trigger'lar: `items_before_write` (updated_at, completed_at, last_done_at'i sunucu belirler),
   `items_log_events` (olay kaydı, `security definer`).
 - Yeni tabloya her zaman RLS aç, `anon` yetkisini kaldır, `authenticated`'a yalnızca gerekeni ver
@@ -67,13 +67,13 @@ src/app/login, auth/*   giriş, kayıt, e-posta doğrulama (/auth/confirm), çı
 src/lib/types.ts        Item, Recurrence, ItemPatch/LocalPatch
 src/lib/rules.ts        alan değişikliklerinin yan etkileri (tek yer: durum/öncelik/tarih/tekrar)
 src/lib/views.ts        görünümlerin gruplanması (Inbox, Bugün, Yaklaşan, Tümü, Notlar)
-src/lib/capture.ts      hızlı ekleme ayrıştırıcısı
+src/lib/capture.ts      hızlı ekleme ayrıştırıcısı (`parseCapture`) ve not ekleme ayrıştırıcısı (`parseNote`, yalnızca etiket)
 src/lib/labels.ts       etiket eşleştirme (norm/canonicalLabel)
 src/lib/recurrence.ts   sonraki tarih hesabı (saf fonksiyonlar, testli)
 src/lib/insights.ts     item_events'ten haftalık tamamlanan sayısı (weeklyDone, saf, testli)
 src/lib/store/          Store arayüzü: supabase.ts (gerçek) ve demo.ts (localStorage). rows.ts = satır eşlemesi
 src/lib/useItems.ts     iyimser güncelleme, debounce'lu yazma, hatada geri alma
-src/components/         App (durum + yerleşim), Sidebar, Capture, ListView, Board, Detail, Insights, Palette
+src/components/         App (durum + yerleşim), Sidebar, Capture, NoteCapture, ListView, Board, Detail, Insights, Palette
 ```
 
 Veri katmanı `Store` arayüzünün arkasında; bileşenler Supabase'i doğrudan çağırmaz.
@@ -81,7 +81,8 @@ Veri katmanı `Store` arayüzünün arkasında; bileşenler Supabase'i doğrudan
 ## Alan kararları (neden böyle)
 
 - **Not = görev, sadece `status` farkı.** Not'a durum/öncelik/tarih/tekrar verilince göreve dönüşür.
-  Kurallar `rules.ts` içinde, başka yere dağıtma.
+  Kurallar `rules.ts` içinde, başka yere dağıtma. Notlar görünümünde ayrı ekleme alanı var
+  (`NoteCapture`: başlık, içerik, etiket); orada `!1`, "yarın" gibi görev sözdizimi ayrıştırılmaz, not hiç göreve dönüşmez.
 - **Inbox:** hızlı eklemede öncelik/tarih/tekrar varsa görev, sadece etiket varsa not, hiçbiri yoksa Inbox.
   Inbox'tan "Bugün" (göreve çevirip bugüne atar) ya da "Not" ile çıkarılır.
 - **Etiket:** `@etiket` (ve `#etiket`). Küçük harf, aksansız karşılaştırılır (`toplanti` = `toplantı`);
@@ -129,11 +130,14 @@ Yapıldı:
    (isteğe bağlı) Confirm signup şablonu `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`.
    Varsayılan şablon da çalışır (`/auth/confirm` `code` parametresini karşılar). İlk hesaplardan sonra yeni
    kayıtları kapat. Vercel işlevleri için bölgeyi Supabase'e yakın (Frankfurt/`fra1`) seçmek isteğe bağlı.
-3. **Analiz ekranı `item_events`'e bağlandı** (önceki 7 hafta). Gerçek projede sorgu hatasız döndü, ama olaylar
-   dünden beri biriktiği için çubuklar henüz 0: sıfırdan farklı geçmiş değerler gerçek veride **görülmedi**
-   (mantık birim testlerle kanıtlı). Bilinen sınırlar: "Son 7 gün" yalnızca silinmemiş öğeleri sayar, geçmiş haftalar
-   silinenleri de sayar; PostgREST tek istekte 1000 satır verir, fazla olayda en eski haftalar eksik kalır.
-   Demo modunda geçmiş örnek veridir. Sıradaki analizler (`Insights.tsx` altındaki liste) henüz yok.
+3. **Analiz ekranı** 8 haftalık grafik: her hafta `items`'tan hesaplanır (biten görevler `completedAt`, tekrarlayanlar
+   son `lastDoneAt`). Önceki 7 haftada `item_events` varsa (`Store.doneHistory`; demo'da `null`) hafta başına
+   **olay sayısı ile öğe sayısının büyüğü** alınır: olay kaydı yeni tutulmaya başlandı, öncesi yalnızca öğelerde
+   var; olaylar da silinenleri ve tekrarlayanların eski oluşumlarını ekler. Bilinen sınırlar: "Son 7 gün"
+   tekrarlayanda yalnızca son tamamlamayı, silinenleri hiç saymaz; PostgREST tek istekte 1000 satır verir, fazla
+   olayda en eski haftalar eksik kalır. Demo yolu (yalnızca öğeler) arayüzde denendi; olay+öğe birleşimi (Supabase) arayüzde
+   **denenmedi**, sıfırdan farklı geçmiş değerler gerçek veride **görülmedi** (olay mantığı birim testli).
+   Sıradaki analizler (`Insights.tsx` altındaki liste) henüz yok.
 4. Gerçek uçtan uca şifreleme (gizli notlar için; sunucu tarafı arama/analiz bu notlarda çalışmaz).
 5. TOTP/passkey arayüzü, CSP başlığı (nonce gerekir), etiket yeniden adlandırma, hesap silme.
 

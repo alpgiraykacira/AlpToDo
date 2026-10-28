@@ -54,7 +54,7 @@ export function supabaseStore(): Store {
         to: r.to_value,
         at: r.at,
       }));
-      return { weeks: weeklyDone(events, addDays(0), weeks), sample: false };
+      return weeklyDone(events, addDays(0), weeks);
     },
   };
 }

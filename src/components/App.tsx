@@ -218,7 +218,7 @@ export default function App({ mode, initial, email }: AppProps) {
     all: `${counts.all} açık görev · ${counts.notes} not${labelFilter ? ` · @${labelFilter}` : ""}`,
     notes: `${counts.notes} not · sabitlenenler üstte`,
     board: "Kartı sürükle ya da aç ve durumu seç",
-    insights: mode === "supabase" ? "Tamamlananlar ve açık görevlerin özeti" : "Örnek veriyle önizleme",
+    insights: "Tamamlananlar ve açık görevlerin özeti",
   };
 
   const showPriorityFilter = view !== "inbox" && view !== "insights" && view !== "notes";
@@ -282,7 +282,7 @@ export default function App({ mode, initial, email }: AppProps) {
                 onMove={setStatus}
               />
             ) : view === "insights" ? (
-              <Insights items={items} />
+              <Insights items={items} store={store} />
             ) : (
               <ListView
                 groups={groupsFor(view, items, filters)}
