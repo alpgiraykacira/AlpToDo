@@ -216,7 +216,7 @@ button{cursor:pointer}
 .d-crumb{font:500 12px var(--font-mono);color:var(--muted);padding:0 6px}
 .d-top .back{display:none}
 .d-body{flex:1;overflow:auto;padding:18px 20px 40px;display:flex;flex-direction:column;gap:20px}
-.d-title{width:100%;border:0;background:none;outline:none;resize:none;overflow:hidden;padding:4px 0;margin:-4px 0;font:600 23px/1.2 var(--font-display);letter-spacing:-.02em}
+.d-title{flex:none;width:100%;border:0;background:none;outline:none;resize:none;overflow:hidden;padding:4px 0;margin:-4px 0;font:600 23px/1.2 var(--font-display);letter-spacing:-.02em}
 .nhint{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 12px;border:1px dashed var(--line);border-radius:10px;font-size:13px;color:var(--muted)}
 .props{display:grid;grid-template-columns:84px minmax(0,1fr);gap:10px 12px;align-items:center;font-size:13px}
 .props>label,.props>.pl{color:var(--muted)}
