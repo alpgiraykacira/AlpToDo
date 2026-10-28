@@ -12,6 +12,7 @@ import type { Parsed } from "@/lib/capture";
 import type { Item, Status, ViewKey } from "@/lib/types";
 import { Board } from "./Board";
 import { Capture } from "./Capture";
+import { NoteCapture, type NoteDraft } from "./NoteCapture";
 import { Detail } from "./Detail";
 import { Icon } from "./icons";
 import { Insights } from "./Insights";
@@ -185,6 +186,29 @@ export default function App({ mode, initial, email }: AppProps) {
     closeCapture();
   };
 
+  const submitNote = (n: NoteDraft) => {
+    create({
+      id: crypto.randomUUID(),
+      title: n.title,
+      body: n.body,
+      status: null,
+      priority: 0,
+      due: null,
+      labels: n.labels,
+      pinned: false,
+      inbox: false,
+      secret: false,
+      checklist: [],
+      recurrence: null,
+      lastDoneAt: null,
+      createdAt: new Date().toISOString(),
+      completedAt: null,
+    });
+    const fresh = n.fresh.length ? ` · yeni etiket: ${n.fresh.map((t) => "@" + t).join(" ")}` : "";
+    showToast(`“${n.title}” not olarak eklendi${fresh}`);
+    closeCapture();
+  };
+
   if (!mounted || !ready) return null;
 
   const sub: Record<ViewKey, string> = {
@@ -228,7 +252,11 @@ export default function App({ mode, initial, email }: AppProps) {
             </button>
           </header>
 
-          <Capture known={known} inputRef={captureRef} onSubmit={submitCapture} />
+          {view === "notes" ? (
+            <NoteCapture known={known} inputRef={captureRef} onSubmit={submitNote} />
+          ) : (
+            <Capture known={known} inputRef={captureRef} onSubmit={submitCapture} />
+          )}
 
           <div className="filters" hidden={!showFilterRow}>
             {showPriorityFilter && (
@@ -254,7 +282,7 @@ export default function App({ mode, initial, email }: AppProps) {
                 onMove={setStatus}
               />
             ) : view === "insights" ? (
-              <Insights items={items} store={store} />
+              <Insights items={items} />
             ) : (
               <ListView
                 groups={groupsFor(view, items, filters)}
