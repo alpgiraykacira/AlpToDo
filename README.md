@@ -120,8 +120,10 @@ src/components/        arayüz
 - **Gerçek bir Supabase projesiyle uçtan uca denenmedi.** Veritabanı tarafı (migration, RLS, trigger'lar)
   gerçek Postgres'te test edildi; giriş yönlendirmesi ve proxy sahte bir adresle denendi; arayüz demo
   modunda tarayıcıyla denendi. Supabase'e ilk bağlandığında giriş, kayıt ve yazma akışını bir kez elle dene.
-- **Analiz ekranı** haftalık çubuklarda örnek veri kullanıyor. `item_events` verisi birikmeye başlıyor;
-  grafiği oradan beslemek sonraki adım.
+- **Analiz ekranı** bugün dahil son 8 haftayı `item_events` kayıtlarından hesaplar. Tekrarlayan görevin
+  her tamamlaması ayrı sayılır, geri alınanlar düşülür; silinen görevlerin geçmişi korunur. Olay kaydı
+  olmayan eski görevler son tamamlanma tarihinden eklenir. Demo modunda olay geçmişi olmadığı için
+  tekrarlayan görevlerin yalnızca son tamamlanması sayılabilir.
 - **Gizli not** şimdilik sadece arayüzde saklanıyor. Gerçek uçtan uca şifreleme (içerik tarayıcıda şifrelenir,
   sunucu okuyamaz) ayrı bir iş; bu notlarda sunucu tarafı arama ve analiz çalışmaz.
 - TOTP/passkey arayüzü yok (Supabase tarafında etkinleştirilebiliyor).
@@ -130,3 +132,4 @@ src/components/        arayüz
 - 2000'den fazla öğede sayfalama yok.
 - Çevrimdışı kullanım / PWA yok.
 - Etiket yeniden adlandırma ve hesap silme arayüzü yok.
+

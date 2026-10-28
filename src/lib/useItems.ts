@@ -14,6 +14,8 @@ const DEBOUNCE_MS = 600;
 export function useItems(store: Store, initial: Item[] | undefined, onError: (message: string) => void) {
   const [items, setItems] = useState<Item[]>(initial ?? []);
   const [ready, setReady] = useState(initial !== undefined);
+  // Analiz, iyimser değişiklikten sonra değil, olay kaydı yazılınca yeniden yüklenir.
+  const [revision, setRevision] = useState(0);
   const pending = useRef(new Map<string, { patch: ItemPatch; timer: ReturnType<typeof setTimeout> }>());
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
@@ -35,6 +37,7 @@ export function useItems(store: Store, initial: Item[] | undefined, onError: (me
     async (fn: () => Promise<void>) => {
       try {
         await fn();
+        setRevision((n) => n + 1);
       } catch {
         onErrorRef.current("Kaydedilemedi. Değişiklik geri alındı.");
         await reload();
@@ -137,5 +140,6 @@ export function useItems(store: Store, initial: Item[] | undefined, onError: (me
     if (store.reset) setItems(await store.reset());
   }, [store]);
 
-  return { items, ready, create, patch, remove, restore, reset, canReset: Boolean(store.reset) };
+  return { items, ready, revision, create, patch, remove, restore, reset, canReset: Boolean(store.reset) };
 }
+

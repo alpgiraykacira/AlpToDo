@@ -1,5 +1,5 @@
 import { addDays } from "../dates";
-import { DONE_EVENT_KINDS, weeklyDone, type DoneEvent } from "../insights";
+import { DONE_EVENT_KINDS, type DoneEvent } from "../insights";
 import { getBrowserClient } from "../supabase/client";
 import type { Store } from "./types";
 import { patchToRow, rowToItem, type ItemRow } from "./rows";
@@ -37,24 +37,34 @@ export function supabaseStore(): Store {
       if (error) throw error;
     },
     async doneHistory(weeks) {
-      // En eski pencerenin ilk gününden itibaren. Fazla satır gelirse (PostgREST üst sınırı) kesilen en eski olaylar olsun.
-      const since = new Date(`${addDays(-(7 * weeks + 6))}T00:00:00`).toISOString();
-      const { data, error } = await sb
-        .from("item_events")
-        .select("item_id, kind, from_value, to_value, at")
-        .in("kind", [...DONE_EVENT_KINDS])
-        .gte("at", since)
-        .order("at", { ascending: false })
-        .limit(1000);
-      if (error) throw error;
-      const events = (data as EventRow[]).map((r) => ({
+      const since = new Date(`${addDays(-(7 * weeks - 1))}T00:00:00`).toISOString();
+      const rows: EventRow[] = [];
+      // PostgREST'in satır sınırı sayımı kesmesin. Eşzamanlı olaylarda id sabit sıra sağlar.
+      const pageSize = 1000;
+      for (let offset = 0; ; ) {
+        const { data, error, count } = await sb
+          .from("item_events")
+          .select("item_id, kind, from_value, to_value, at", { count: "exact" })
+          .in("kind", [...DONE_EVENT_KINDS])
+          .gte("at", since)
+          .order("at", { ascending: true })
+          .order("id", { ascending: true })
+          .range(offset, offset + pageSize - 1);
+        if (error) throw error;
+        if (!data.length) break;
+        rows.push(...(data as EventRow[]));
+        offset += data.length;
+        if (count !== null && offset >= count) break;
+        if (count === null && data.length < pageSize) break;
+      }
+      return rows.map((r) => ({
         itemId: r.item_id,
         kind: r.kind,
         from: r.from_value,
         to: r.to_value,
         at: r.at,
       }));
-      return weeklyDone(events, addDays(0), weeks);
     },
   };
 }
+

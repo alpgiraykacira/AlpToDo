@@ -51,7 +51,7 @@ export default function App({ mode, initial, email }: AppProps) {
   }, []);
 
   const store = useMemo(() => (mode === "supabase" ? supabaseStore() : demoStore()), [mode]);
-  const { items, ready, create, patch, remove, restore, reset, canReset } = useItems(store, initial, showToast);
+  const { items, ready, revision, create, patch, remove, restore, reset, canReset } = useItems(store, initial, showToast);
 
   const [mounted, setMounted] = useState(false);
   const [view, setView] = useState<ViewKey>("today");
@@ -430,7 +430,7 @@ export default function App({ mode, initial, email }: AppProps) {
                 onMove={setStatus}
               />
             ) : view === "insights" ? (
-              <Insights items={items} store={store} />
+              <Insights items={items} store={store} revision={revision} />
             ) : (
               <ListView
                 groups={groupsFor(view, items, filters)}
@@ -502,3 +502,4 @@ export default function App({ mode, initial, email }: AppProps) {
     </>
   );
 }
+

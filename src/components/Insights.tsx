@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { addDays, dayDiff, fmtDate, localDay } from "@/lib/dates";
+import { addDays, dayDiff, fmtDate } from "@/lib/dates";
+import { weeklyDone, type DoneEvent } from "@/lib/insights";
 import { labelCounts } from "@/lib/labels";
 import { isOpen } from "@/lib/rules";
 import type { Store } from "@/lib/store/types";
@@ -10,45 +11,29 @@ import type { Item } from "@/lib/types";
 /** Grafikte gösterilen hafta sayısı (son 7 gün dahil). */
 const WEEKS = 8;
 
-/** Önceki haftalar: `item_events`'ten gelen sayılar (demo modunda yok). */
-type History = { state: "loading" } | { state: "error" } | { state: "ready"; weeks: number[] | null };
+/** Bugün dahil bütün haftaların olayları (demo modunda yok). */
+type History = { state: "loading" } | { state: "error" } | { state: "ready"; events: DoneEvent[] | null };
 
-export function Insights({ items, store }: { items: Item[]; store: Store }) {
+export function Insights({ items, store, revision }: { items: Item[]; store: Store; revision: number }) {
   const [history, setHistory] = useState<History>({ state: "loading" });
   useEffect(() => {
     let cancelled = false;
+    setHistory({ state: "loading" });
     store
-      .doneHistory(WEEKS - 1)
-      .then((weeks) => !cancelled && setHistory({ state: "ready", weeks }))
+      .doneHistory(WEEKS)
+      .then((events) => !cancelled && setHistory({ state: "ready", events }))
       .catch(() => !cancelled && setHistory({ state: "error" }));
     return () => {
       cancelled = true;
     };
-  }, [store]);
+  }, [store, revision]);
 
   const triaged = items.filter((i) => !i.inbox);
   const open = triaged.filter(isOpen);
   const late = open.filter((i) => i.due && dayDiff(i.due) < 0).length;
   const p1 = open.filter((i) => i.priority === 1).length;
-  // Biten görevler + o haftada tamamlanan tekrarlayanlar (her biri bir kez sayılır).
-  // Tekrarlayanlarda yalnızca son tamamlanma bilinir; eski oluşumlar için olay kaydına bakılır (aşağıda).
-  const countWeek = (w: number) => {
-    const lo = addDays(-6 - 7 * w);
-    const hi = addDays(-7 * w);
-    const inWindow = (ts: string | null) => {
-      if (!ts) return false;
-      const d = localDay(ts);
-      return d >= lo && d <= hi;
-    };
-    return triaged.filter(
-      (i) => (i.status === "done" && inWindow(i.completedAt)) || (i.recurrence !== null && inWindow(i.lastDoneAt)),
-    ).length;
-  };
-  const fromItems = Array.from({ length: WEEKS }, (_, k) => countWeek(WEEKS - 1 - k));
-  // Önceki haftalarda olay kaydı (silinenler ve tekrarlayanların eski oluşumları dahil) ile öğelerden gelen
-  // sayının büyüğü alınır: olay kaydı yeni tutulmaya başlandı, ondan önce biten görevler yalnızca öğelerde var.
-  const past = history.state === "ready" ? history.weeks : null;
-  const values = fromItems.map((n, k) => (past && k < WEEKS - 1 ? Math.max(n, past[k]) : n));
+  const events = history.state === "ready" ? history.events : null;
+  const values = weeklyDone(events ?? [], addDays(0), WEEKS, undefined, items);
   const current = values[WEEKS - 1];
   // Yalnızca "Son 7 gün" doluysa grafik tek çubuktan ibaret kalır; o zaman dürüst bir satır göster.
   const hasPast = values.slice(0, -1).some((v) => v > 0);
@@ -76,7 +61,9 @@ export function Insights({ items, store }: { items: Item[]; store: Store }) {
           <h2>Haftalık tamamlanan görev</h2>
           {!hasPast && (
             <p className="note" style={{ marginTop: 0 }}>
-              Önceki haftalarda tamamlanan görev yok. Görevleri bitirdikçe haftalık çubuklar burada görünür.
+              {history.state === "loading" ? "Tamamlama geçmişi yükleniyor…" : history.state === "error"
+                ? "Önceki haftaların tamamlama geçmişi doğrulanamadı."
+                : "Önceki haftalarda tamamlanan görev yok. Görevleri bitirdikçe haftalık çubuklar burada görünür."}
             </p>
           )}
           <div className="chart" hidden={!hasPast}>
@@ -100,12 +87,12 @@ export function Insights({ items, store }: { items: Item[]; store: Store }) {
             </div>
           </div>
           <div className="note" hidden={!hasPast && history.state !== "error"}>
-            {history.state === "loading" && "Geçmiş haftalar yükleniyor; şimdilik yalnızca görevlerin tamamlanma tarihi sayılıyor."}
+            {history.state === "loading" && "Tamamlama geçmişi yükleniyor; şimdilik yalnızca görevlerin son tamamlanma tarihi sayılıyor."}
             {history.state === "error" && "Geçmiş kayıtları yüklenemedi; çubuklar yalnızca görevlerin tamamlanma tarihinden hesaplandı."}
-            {history.state === "ready" && !history.weeks &&
+            {history.state === "ready" && !history.events &&
               "Çubuklar görevlerin tamamlanma tarihinden hesaplanır (demo modunda olay kaydı yok). Tekrarlayanlarda yalnızca son tamamlanma görünür."}
-            {history.state === "ready" && history.weeks &&
-              "Önceki haftalar durum değişikliği kayıtlarından ve görevlerin tamamlanma tarihinden gelir; kayıt tutulmadan önceki tekrarlayan tamamlamalar görünmez."}
+            {history.state === "ready" && history.events &&
+              "Her tamamlama ayrı sayılır; geri alınanlar düşülür. Olay kaydı olmayan eski görevlerin son tamamlanma tarihi kullanılır."}
           </div>
         </div>
         <div className="panel">
@@ -141,3 +128,4 @@ export function Insights({ items, store }: { items: Item[]; store: Store }) {
     </>
   );
 }
+
