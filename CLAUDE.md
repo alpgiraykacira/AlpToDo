@@ -45,7 +45,7 @@ Arayüz geliştirirken en hızlı yol bu.
 ## Veritabanı
 
 `supabase/migrations/`, tarih sırasıyla: `20261027000000_init.sql`, `20261028000000_recurrence.sql`, `20261030000000_files.sql`.
-**Kullanıcı ilk ikisini Supabase'e uyguladı; `files` henüz uygulanmadı (SQL Editor'de çalıştırılmalı).** Uygulanmış bir migration'ı düzenleme**, yeni bir dosya ekle
+**Kullanıcı üçünü de Supabase'e uyguladı. Uygulanmış bir migration'ı düzenleme**, yeni bir dosya ekle
 (`YYYYMMDDHHMMSS_ad.sql`) ve `supabase/tests/rls.sql` içinde `\i` ile yükle.
 
 - `items`: not ve görev tek tablo. **`status` null ise not.** Etiketler `text[]` (`labels`), kullanımdan
