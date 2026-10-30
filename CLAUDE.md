@@ -44,8 +44,8 @@ Arayüz geliştirirken en hızlı yol bu.
 
 ## Veritabanı
 
-`supabase/migrations/`, tarih sırasıyla: `20261027000000_init.sql`, `20261028000000_recurrence.sql`.
-**Kullanıcı ikisini de Supabase'e uyguladı. Uygulanmış bir migration'ı düzenleme**, yeni bir dosya ekle
+`supabase/migrations/`, tarih sırasıyla: `20261027000000_init.sql`, `20261028000000_recurrence.sql`, `20261030000000_files.sql`.
+**Kullanıcı ilk ikisini Supabase'e uyguladı; `files` henüz uygulanmadı (SQL Editor'de çalıştırılmalı).** Uygulanmış bir migration'ı düzenleme**, yeni bir dosya ekle
 (`YYYYMMDDHHMMSS_ad.sql`) ve `supabase/tests/rls.sql` içinde `\i` ile yükle.
 
 - `items`: not ve görev tek tablo. **`status` null ise not.** Etiketler `text[]` (`labels`), kullanımdan
@@ -68,6 +68,7 @@ src/lib/types.ts        Item, Recurrence, ItemPatch/LocalPatch
 src/lib/rules.ts        alan değişikliklerinin yan etkileri (tek yer: durum/öncelik/tarih/tekrar)
 src/lib/views.ts        görünümlerin gruplanması (Inbox, Bugün, Yaklaşan, Tümü, Notlar)
 src/lib/capture.ts      hızlı ekleme ayrıştırıcısı (`parseCapture`) ve not ekleme ayrıştırıcısı (`parseNote`, yalnızca etiket)
+src/lib/files.ts        dosya ek sınırları, boyut/ad yardımcıları (saf, testli)
 src/lib/labels.ts       etiket eşleştirme (norm/canonicalLabel)
 src/lib/recurrence.ts   sonraki tarih hesabı (saf fonksiyonlar, testli)
 src/lib/insights.ts     item_events + olayı olmayan eski öğelerden haftalık tamamlanan sayısı (weeklyDone, saf, testli)
@@ -99,6 +100,13 @@ Veri katmanı `Store` arayüzünün arkasında; bileşenler Supabase'i doğrudan
 - **Hydration:** `App` içeriği yalnızca tarayıcıda çizilir (`mounted` kapısı), çünkü "Bugün/Dün" gibi
   etiketler sunucu ile tarayıcı saat diliminde farklı çıkabilir. Kaldırma.
 - **Yazı tipleri** `@fontsource` paketleriyle yerelden sunulur (üçüncü taraf istek yok, build ağa bağlı değil).
+
+- **Dosya ekleri:** `items.files` (jsonb üst veri: id, ad, tür, boyut, yol); içerik Supabase Storage'daki özel
+  `attachments` kovasında, yol `<user_id>/<öğe>/<dosya>`, Storage RLS ilk parçayı `auth.uid()` ile eşler.
+  Dosya başına 10 MB, öğe başına 20 dosya (demo: 1 MB, data URL olarak `sira.demo.files.v1`). İndirme 60 sn'lik
+  imzalı bağlantıyla. Yükleme önce, `files` yazması sonra; kaldırmada önce liste yazılır, dosya o başarılırsa silinir.
+  Not ekleme alanında ve Detay'da seç / Ctrl+V / sürükle-bırak. Silinen (yumuşak) öğenin dosyaları durur.
+  Dosya türü kısıtı yok; yalnızca raster görseller önizlenir (SVG önizlenmez).
 
 ## Test durumu: dürüst özet
 

@@ -14,6 +14,15 @@ export interface Recurrence {
   from: "due" | "done";
 }
 
+/** Ek dosya üst verisi. İçerik Storage'da (`path`), öğede yalnızca bu kayıt durur. */
+export interface FileRef {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  path: string;
+}
+
 export interface ChecklistEntry {
   t: string;
   d: boolean;
@@ -34,6 +43,7 @@ export interface Item {
   inbox: boolean;
   secret: boolean;
   checklist: ChecklistEntry[];
+  files: FileRef[];
   /** Tekrarlayan görev kuralı. Varsa `due` dolu olmalıdır. */
   recurrence: Recurrence | null;
   /** Tekrarlayan görevin en son tamamlandığı an (ISO). Sunucu tarafında trigger belirler. */

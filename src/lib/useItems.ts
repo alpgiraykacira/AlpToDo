@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Store } from "./store/types";
-import type { Item, ItemPatch, LocalPatch } from "./types";
+import type { FileRef, Item, ItemPatch, LocalPatch } from "./types";
 
 const DEBOUNCE_MS = 600;
 
@@ -17,6 +17,8 @@ export function useItems(store: Store, initial: Item[] | undefined, onError: (me
   // Analiz, iyimser değişiklikten sonra değil, olay kaydı yazılınca yeniden yüklenir.
   const [revision, setRevision] = useState(0);
   const pending = useRef(new Map<string, { patch: ItemPatch; timer: ReturnType<typeof setTimeout> }>());
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
 
@@ -136,10 +138,54 @@ export function useItems(store: Store, initial: Item[] | undefined, onError: (me
     [store, enqueue],
   );
 
+  /**
+   * Dosyaları yükler, başarılı olanları öğenin `files` listesine ekler. Yükleme öğenin
+   * oluşturulmasını beklemez; üst veri yazması aynı öğenin kuyruğunda, oluşturmadan sonra gider.
+   * Başarısızlar tek tek bildirilir, diğerleri eklenir.
+   */
+  const attach = useCallback(
+    async (id: string, files: File[]) => {
+      const results = await Promise.all(
+        files.map((f) =>
+          store.uploadFile(id, f).catch(() => {
+            onErrorRef.current(`“${f.name}” yüklenemedi`);
+            return null;
+          }),
+        ),
+      );
+      const added = results.filter((r): r is FileRef => r !== null);
+      const current = itemsRef.current.find((i) => i.id === id);
+      if (!added.length || !current) {
+        // Öğe bu arada silindiyse yetim kalan dosyaları temizle.
+        if (!current) await Promise.all(added.map((f) => store.removeFile(f).catch(() => undefined)));
+        return;
+      }
+      const next = [...current.files, ...added];
+      apply(id, { files: next });
+      void enqueue(id, () => store.update(id, { files: next }));
+    },
+    [store, apply, enqueue],
+  );
+
+  /** Önce listeden çıkarır; dosya yalnızca bu yazma başarılı olursa silinir. */
+  const detach = useCallback(
+    (id: string, file: FileRef) => {
+      const current = itemsRef.current.find((i) => i.id === id);
+      if (!current) return;
+      const next = current.files.filter((f) => f.id !== file.id);
+      apply(id, { files: next });
+      void enqueue(id, async () => {
+        await store.update(id, { files: next });
+        await store.removeFile(file).catch(() => undefined);
+      });
+    },
+    [store, apply, enqueue],
+  );
+
   const reset = useCallback(async () => {
     if (store.reset) setItems(await store.reset());
   }, [store]);
 
-  return { items, ready, revision, create, patch, remove, restore, reset, canReset: Boolean(store.reset) };
+  return { items, ready, revision, create, patch, remove, restore, attach, detach, reset, canReset: Boolean(store.reset) };
 }
 

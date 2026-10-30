@@ -6,6 +6,8 @@ import { labelCounts } from "@/lib/labels";
 import { rules } from "@/lib/rules";
 import { demoStore } from "@/lib/store/demo";
 import { supabaseStore } from "@/lib/store/supabase";
+import { pickAllowed, uniqueName } from "@/lib/files";
+import type { FileRef } from "@/lib/types";
 import { useItems } from "@/lib/useItems";
 import { counts as countItems, groupsFor, passesFilters } from "@/lib/views";
 import type { Parsed } from "@/lib/capture";
@@ -51,7 +53,7 @@ export default function App({ mode, initial, email }: AppProps) {
   }, []);
 
   const store = useMemo(() => (mode === "supabase" ? supabaseStore() : demoStore()), [mode]);
-  const { items, ready, revision, create, patch, remove, restore, reset, canReset } = useItems(store, initial, showToast);
+  const { items, ready, revision, create, patch, remove, restore, attach, detach, reset, canReset } = useItems(store, initial, showToast);
 
   const [mounted, setMounted] = useState(false);
   const [view, setView] = useState<ViewKey>("today");
@@ -301,6 +303,7 @@ export default function App({ mode, initial, email }: AppProps) {
       inbox: !(hasTask || p.labels.length),
       secret: false,
       checklist: [],
+      files: [],
       recurrence: p.recurrence,
       lastDoneAt: null,
       createdAt: new Date().toISOString(),
@@ -311,6 +314,32 @@ export default function App({ mode, initial, email }: AppProps) {
     showToast(`“${p.title}” ${dest}${fresh}`);
     closeCapture();
   };
+
+  /** Detaydan eklenen dosyalar: sınırlar uygulanır, çakışan adlar numaralanır. */
+  const attachFiles = (id: string, picked: File[]) => {
+    const item = items.find((x) => x.id === id);
+    if (!item || !picked.length) return;
+    const { ok, errors } = pickAllowed(picked, item.files.length);
+    if (errors.length) showToast(errors.join(" · "));
+    const names = item.files.map((f) => f.name);
+    const named = ok.map((f) => {
+      const name = uniqueName(f.name, names);
+      names.push(name);
+      return name === f.name ? f : new File([f], name, { type: f.type });
+    });
+    if (named.length) void attach(id, named);
+  };
+  const openFile = useCallback(
+    async (file: FileRef, download: boolean) => {
+      try {
+        return await store.fileUrl(file, download);
+      } catch {
+        showToast(`“${file.name}” açılamadı`);
+        return null;
+      }
+    },
+    [store, showToast],
+  );
 
   const submitNote = (n: NoteDraft) => {
     const id = crypto.randomUUID();
@@ -327,13 +356,16 @@ export default function App({ mode, initial, email }: AppProps) {
       inbox: false,
       secret: false,
       checklist: [],
+      files: [],
       recurrence: null,
       lastDoneAt: null,
       createdAt: new Date().toISOString(),
       completedAt: null,
     });
+    if (n.files.length) void attach(id, n.files);
     const fresh = n.fresh.length ? ` · yeni etiket: ${n.fresh.map((t) => "@" + t).join(" ")}` : "";
-    showToast(`“${n.title}” not olarak eklendi${fresh}`);
+    const attached = n.files.length ? ` · ${n.files.length} dosya` : "";
+    showToast(`“${n.title}” not olarak eklendi${fresh}${attached}`);
     closeCapture();
   };
 
@@ -399,7 +431,7 @@ export default function App({ mode, initial, email }: AppProps) {
           </header>
 
           {view === "insights" ? null : view === "notes" ? (
-            <NoteCapture known={known} inputRef={captureRef} onSubmit={submitNote} />
+            <NoteCapture known={known} inputRef={captureRef} onSubmit={submitNote} onReject={(errors) => showToast(errors.join(" · "))} />
           ) : (
             <Capture known={known} inputRef={captureRef} onSubmit={submitCapture} />
           )}
@@ -456,6 +488,9 @@ export default function App({ mode, initial, email }: AppProps) {
               onStatus={setStatus}
               onClose={() => setSelId(null)}
               onDelete={deleteItem}
+              onAttach={attachFiles}
+              onDetach={detach}
+              openFile={openFile}
             />
           </section>
         )}

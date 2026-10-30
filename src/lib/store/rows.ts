@@ -1,4 +1,4 @@
-import type { Item, ItemPatch, Priority, Recurrence, Status, ChecklistEntry } from "../types";
+import type { FileRef, Item, ItemPatch, Priority, Recurrence, Status, ChecklistEntry } from "../types";
 
 export interface ItemRow {
   id: string;
@@ -12,6 +12,7 @@ export interface ItemRow {
   inbox: boolean;
   secret: boolean;
   checklist: ChecklistEntry[];
+  files: FileRef[];
   recurrence: Recurrence | null;
   last_done_at: string | null;
   created_at: string;
@@ -31,6 +32,7 @@ export function rowToItem(r: ItemRow): Item {
     inbox: r.inbox,
     secret: r.secret,
     checklist: r.checklist,
+    files: r.files ?? [],
     recurrence: r.recurrence,
     lastDoneAt: r.last_done_at,
     createdAt: r.created_at,
@@ -51,6 +53,7 @@ export function patchToRow(p: ItemPatch): Record<string, unknown> {
   if (p.inbox !== undefined) row.inbox = p.inbox;
   if (p.secret !== undefined) row.secret = p.secret;
   if (p.checklist !== undefined) row.checklist = p.checklist;
+  if (p.files !== undefined) row.files = p.files;
   if (p.recurrence !== undefined) row.recurrence = p.recurrence;
   if (p.lastDoneAt !== undefined) row.last_done_at = p.lastDoneAt; // sunucu "şimdi" ile değiştirir
   if (p.deleted !== undefined) row.deleted_at = p.deleted ? new Date().toISOString() : null;

@@ -2,25 +2,31 @@
 
 import { useState, type RefObject } from "react";
 import { parseNote, PENDING_LABEL } from "@/lib/capture";
+import { pickAllowed, uniqueName } from "@/lib/files";
 import { canonicalLabel, norm } from "@/lib/labels";
+import { droppedFiles, FilePicker, hasFiles, pastedFiles, PendingFiles } from "./Attachments";
 
 export interface NoteDraft {
   title: string;
   body: string;
   labels: string[];
   fresh: string[];
+  files: File[];
 }
 
 interface NoteCaptureProps {
   known: string[];
   inputRef: RefObject<HTMLInputElement | null>;
   onSubmit: (n: NoteDraft) => void;
+  onReject: (errors: string[]) => void;
 }
 
-/** Not ekleme: başlık, isteğe bağlı içerik ve etiket. Öncelik, tarih ve tekrar yok. */
-export function NoteCapture({ known, inputRef, onSubmit }: NoteCaptureProps) {
+/** Not ekleme: başlık, isteğe bağlı içerik, etiket ve dosya (seç, yapıştır ya da sürükle). Öncelik, tarih ve tekrar yok. */
+export function NoteCapture({ known, inputRef, onSubmit, onReject }: NoteCaptureProps) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [dropping, setDropping] = useState(false);
 
   const pending = title.match(PENDING_LABEL);
   const suggestions = pending ? known.filter((n) => norm(n).startsWith(norm(pending[2]))).slice(0, 6) : [];
@@ -39,17 +45,54 @@ export function NoteCapture({ known, inputRef, onSubmit }: NoteCaptureProps) {
     inputRef.current?.focus();
   };
 
+  const addFiles = (picked: File[]) => {
+    if (!picked.length) return;
+    const { ok, errors } = pickAllowed(picked, files.length);
+    if (errors.length) onReject(errors);
+    // Yapıştırılan dosyalar hep "image.png" gelir; adlar çakışmasın.
+    const names = files.map((f) => f.name);
+    const named = ok.map((f) => {
+      const name = uniqueName(f.name, names);
+      names.push(name);
+      return name === f.name ? f : new File([f], name, { type: f.type });
+    });
+    setFiles((prev) => [...prev, ...named]);
+  };
+
   const submit = () => {
     const parsed = parseNote(title, known);
-    if (!parsed.title) return;
-    onSubmit({ ...parsed, body: body.trim() });
+    // Başlık yazılmadıysa ama dosya varsa ilk dosyanın adı başlık olur.
+    const noteTitle = parsed.title || files[0]?.name;
+    if (!noteTitle) return;
+    onSubmit({ ...parsed, title: noteTitle, body: body.trim(), files });
     setTitle("");
     setBody("");
+    setFiles([]);
   };
 
   return (
     <div className="capture">
-      <div className="cap-box note-box">
+      <div
+        className={`cap-box note-box${dropping ? " drop" : ""}`}
+        onPaste={(e) => {
+          const pasted = pastedFiles(e);
+          if (!pasted.length) return;
+          e.preventDefault();
+          addFiles(pasted);
+        }}
+        onDragOver={(e) => {
+          if (!hasFiles(e)) return;
+          e.preventDefault();
+          setDropping(true);
+        }}
+        onDragLeave={() => setDropping(false)}
+        onDrop={(e) => {
+          if (!hasFiles(e)) return;
+          e.preventDefault();
+          setDropping(false);
+          addFiles(droppedFiles(e));
+        }}
+      >
         <input
           ref={inputRef}
           type="text"
@@ -81,9 +124,13 @@ export function NoteCapture({ known, inputRef, onSubmit }: NoteCaptureProps) {
             }
           }}
         />
-        <button className="btn" onClick={submit}>
-          Not ekle
-        </button>
+        <PendingFiles files={files} onRemove={(i) => setFiles((prev) => prev.filter((_, j) => j !== i))} />
+        <div className="note-actions">
+          <FilePicker onPick={addFiles} />
+          <button className="btn" onClick={submit}>
+            Not ekle
+          </button>
+        </div>
       </div>
       <div className="cap-hint">
         {suggestions.length > 0 && (
@@ -103,8 +150,8 @@ export function NoteCapture({ known, inputRef, onSubmit }: NoteCaptureProps) {
             <span className="sugg-l">Tab ile tamamla</span>
           </>
         )}
-        {!title.trim() && !body ? (
-          <span className="syn"><b>@etiket</b> ekle · <b>Ctrl+Enter</b> içerikten kaydeder</span>
+        {!title.trim() && !body && !files.length ? (
+          <span className="syn"><b>@etiket</b> ekle · <b>Ctrl+V</b> ile dosya yapıştır ya da sürükle · <b>Ctrl+Enter</b> içerikten kaydeder</span>
         ) : (
           preview.labels.map((l) => {
             const fresh = preview.fresh.includes(l);

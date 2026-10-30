@@ -9,6 +9,7 @@ import { isTask, rules } from "@/lib/rules";
 import {
   PRIORITY_LABEL,
   STATUS_LABEL,
+  type FileRef,
   type Item,
   type LocalPatch,
   type Priority,
@@ -16,6 +17,7 @@ import {
   type RecurrenceUnit,
   type Status,
 } from "@/lib/types";
+import { droppedFiles, FileList, FilePicker, hasFiles, pastedFiles, type OpenFile } from "./Attachments";
 import { Icon } from "./icons";
 
 export type PatchFn = (id: string, patch: LocalPatch, opts?: { debounced?: boolean }) => void;
@@ -27,12 +29,15 @@ interface DetailProps {
   onStatus: (id: string, status: Status | null) => void;
   onClose: () => void;
   onDelete: (id: string) => void;
+  onAttach: (id: string, files: File[]) => void;
+  onDetach: (id: string, file: FileRef) => void;
+  openFile: OpenFile;
 }
 
 /** Bir öğe için `key={item.id}` ile kullanılır; öğe değişince yerel durum (gizli içerik, düzenleme) sıfırlanır. */
 const WEEKDAY_CHIPS: [number, string][] = [[1, "Pzt"], [2, "Sal"], [3, "Çar"], [4, "Per"], [5, "Cum"], [6, "Cmt"], [0, "Paz"]];
 
-export function Detail({ item, knownLabels, onPatch, onStatus, onClose, onDelete }: DetailProps) {
+export function Detail({ item, knownLabels, onPatch, onStatus, onClose, onDelete, onAttach, onDetach, openFile }: DetailProps) {
   const task = isTask(item);
   const [revealed, setRevealed] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -92,7 +97,21 @@ export function Detail({ item, knownLabels, onPatch, onStatus, onClose, onDelete
         <button className="ib x" aria-label="Kapat" onClick={onClose}><Icon n="x" /></button>
       </div>
 
-      <div className="d-body">
+      <div
+        className="d-body"
+        onPaste={(e) => {
+          const pasted = pastedFiles(e);
+          if (!pasted.length) return;
+          e.preventDefault();
+          onAttach(item.id, pasted);
+        }}
+        onDragOver={(e) => hasFiles(e) && e.preventDefault()}
+        onDrop={(e) => {
+          if (!hasFiles(e)) return;
+          e.preventDefault();
+          onAttach(item.id, droppedFiles(e));
+        }}
+      >
         <textarea
           ref={titleRef}
           className="d-title"
@@ -321,6 +340,18 @@ export function Detail({ item, knownLabels, onPatch, onStatus, onClose, onDelete
             >
               <Markdown source={item.body} />
             </div>
+          )}
+        </div>
+
+        <div className="sec">
+          <h4>
+            <span>Ekler{item.files.length ? ` · ${item.files.length}` : ""}</span>
+            <FilePicker onPick={(files) => onAttach(item.id, files)} />
+          </h4>
+          {item.files.length ? (
+            <FileList files={item.files} open={openFile} onRemove={(f) => onDetach(item.id, f)} />
+          ) : (
+            <p className="empty-files">Dosya yapıştır (Ctrl+V), buraya sürükle ya da “Dosya ekle”yi kullan.</p>
           )}
         </div>
 
