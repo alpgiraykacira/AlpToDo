@@ -1,6 +1,7 @@
 import { addDays } from "../dates";
 import { DONE_EVENT_KINDS, type DoneEvent } from "../insights";
 import { getBrowserClient } from "../supabase/client";
+import type { FileRef } from "../types";
 import type { Store } from "./types";
 import { patchToRow, rowToItem, type ItemRow } from "./rows";
 
@@ -12,8 +13,16 @@ interface EventRow {
   at: string;
 }
 
+const BUCKET = "attachments";
+
 export function supabaseStore(): Store {
   const sb = getBrowserClient();
+  // Dosya yolu `<user_id>/<öğe>/<dosya>`; Storage RLS ilk parçayı JWT'deki kullanıcıyla karşılaştırır.
+  const userId = async () => {
+    const { data, error } = await sb.auth.getClaims();
+    if (error || !data?.claims.sub) throw error ?? new Error("Oturum yok");
+    return data.claims.sub;
+  };
   return {
     async load() {
       const { data, error } = await sb
@@ -34,6 +43,25 @@ export function supabaseStore(): Store {
     },
     async update(id, patch) {
       const { error } = await sb.from("items").update(patchToRow(patch)).eq("id", id);
+      if (error) throw error;
+    },
+    async uploadFile(itemId, file) {
+      const id = crypto.randomUUID();
+      const path = `${await userId()}/${itemId}/${id}`;
+      const type = file.type || "application/octet-stream";
+      const { error } = await sb.storage.from(BUCKET).upload(path, file, { contentType: type, upsert: false });
+      if (error) throw error;
+      return { id, name: file.name, type, size: file.size, path } satisfies FileRef;
+    },
+    async fileUrl(file, download) {
+      const { data, error } = await sb.storage
+        .from(BUCKET)
+        .createSignedUrl(file.path, 60, download ? { download: file.name } : undefined);
+      if (error) throw error;
+      return data.signedUrl;
+    },
+    async removeFile(file) {
+      const { error } = await sb.storage.from(BUCKET).remove([file.path]);
       if (error) throw error;
     },
     async doneHistory(weeks) {

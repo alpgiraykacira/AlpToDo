@@ -12,8 +12,20 @@ create role authenticated nologin;
 grant usage on schema public, auth to anon, authenticated;
 grant execute on function auth.uid() to anon, authenticated;
 
+-- Supabase Storage'ın minimal taklidi (yalnızca migration'ın kullandığı parçalar).
+create schema storage;
+create table storage.buckets (id text primary key, name text not null, public boolean default false, file_size_limit bigint);
+create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text references storage.buckets (id), name text);
+alter table storage.objects enable row level security;
+create function storage.foldername(name text) returns text[] language sql immutable as
+  $$ select (string_to_array(name, '/'))[1:cardinality(string_to_array(name, '/')) - 1] $$;
+grant usage on schema storage to anon, authenticated;
+grant select, insert, delete on storage.objects to authenticated;
+grant select on storage.buckets to authenticated;
+
 \i supabase/migrations/20261027000000_init.sql
 \i supabase/migrations/20261028000000_recurrence.sql
+\i supabase/migrations/20261030000000_files.sql
 
 insert into auth.users values
   ('aaaaaaaa-0000-0000-0000-000000000001'),
@@ -183,6 +195,37 @@ begin
   exception when insufficient_privilege then null; end;
 end $$;
 
+-- Dosya ekleri: kova özel, üst veri dizi olmalı ve en fazla 20 olmalı.
+do $$
+begin
+  assert (select public from storage.buckets where id = 'attachments') = false, 'attachments kovası özel olmalı';
+  begin
+    update public.items set files = '{}'::jsonb where id = '11111111-1111-1111-1111-111111111111';
+    assert false, 'files dizi olmalı';
+  exception when check_violation then null; end;
+  begin
+    update public.items set files = (select jsonb_agg('{}'::jsonb) from generate_series(1, 21))
+      where id = '11111111-1111-1111-1111-111111111111';
+    assert false, 'files en fazla 20 öğe olmalı';
+  exception when check_violation then null; end;
+end $$;
+
+-- Storage: A yalnızca kendi klasörüne yazabilir.
+insert into storage.objects (bucket_id, name)
+  values ('attachments', 'aaaaaaaa-0000-0000-0000-000000000001/11111111-1111-1111-1111-111111111111/f1');
+do $$
+begin
+  begin
+    insert into storage.objects (bucket_id, name)
+      values ('attachments', 'bbbbbbbb-0000-0000-0000-000000000002/x/f2');
+    assert false, 'A, B''nin klasörüne yazamamalı';
+  exception when insufficient_privilege then null; end;
+  begin
+    insert into storage.objects (bucket_id, name) values ('attachments', 'f3');
+    assert false, 'A, kök dizine yazamamalı';
+  exception when insufficient_privilege then null; end;
+end $$;
+
 -- ---- Kullanıcı B: A'nın verisini görmemeli ---------------------------------
 select set_config('request.jwt.claim.sub', 'bbbbbbbb-0000-0000-0000-000000000002', false);
 
@@ -200,6 +243,11 @@ begin
   get diagnostics n = row_count;
   assert n = 0, 'B, A''nın item''ını silememeli';
 
+  assert (select count(*) from storage.objects) = 0, 'B, A''nın dosyalarını görmemeli';
+  delete from storage.objects;
+  get diagnostics n = row_count;
+  assert n = 0, 'B, A''nın dosyalarını silememeli';
+
   begin
     insert into public.items (user_id, title) values ('aaaaaaaa-0000-0000-0000-000000000001', 'sahte');
     assert false, 'B, A adına satır ekleyememeli';
@@ -214,6 +262,8 @@ begin
   begin perform 1 from public.items; assert false, 'anon items okuyamamalı';
   exception when insufficient_privilege then null; end;
   begin perform 1 from public.item_events; assert false, 'anon item_events okuyamamalı';
+  exception when insufficient_privilege then null; end;
+  begin perform 1 from storage.objects; assert false, 'anon dosyaları okuyamamalı';
   exception when insufficient_privilege then null; end;
 end $$;
 

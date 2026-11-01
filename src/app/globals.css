@@ -113,6 +113,19 @@ button{cursor:pointer}
 .note-box textarea{border:0;background:none;outline:none;resize:vertical;padding:4px 0 8px;border-top:1px solid var(--line);min-height:44px}
 .note-box textarea::placeholder{color:var(--muted)}
 .note-box .btn{align-self:flex-end}
+.note-box.drop{border-color:var(--accent);background:var(--accent-soft)}
+.note-actions{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.attach-btn{display:inline-flex;align-items:center;gap:5px;text-transform:none;letter-spacing:0;font-family:inherit}
+.files{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.files li{display:flex;align-items:center;gap:8px;min-width:0;padding:4px 6px 4px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);font-size:13px}
+.files.pending{margin:4px 0 8px}
+.fname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+.fname.link{border:0;background:none;padding:0;color:var(--fg)}
+.fname.link:hover{color:var(--accent);text-decoration:underline}
+.fsize{flex:none;font:400 11.5px var(--font-mono);color:var(--muted)}
+.fthumb{flex:none;width:28px;height:28px;border-radius:5px;object-fit:cover;background:var(--line)}
+.ib.sm{width:26px;height:26px}
+.empty-files{margin:0;font-size:13px;color:var(--muted)}
 .btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:8px;background:var(--accent);color:var(--accent-fg);padding:8px 14px;font-weight:600}
 .cap-hint{display:flex;flex-wrap:wrap;gap:6px 8px;margin-top:8px;min-height:24px;font-size:12px;color:var(--muted);align-items:center}
 .syn b{font:500 12px var(--font-mono);color:var(--fg);background:var(--surface-2);border:1px solid var(--line);border-radius:5px;padding:0 5px}

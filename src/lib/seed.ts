@@ -15,6 +15,7 @@ export function seedItems(): Item[] {
     inbox: false,
     secret: false,
     checklist: [],
+    files: [],
     recurrence: null,
     lastDoneAt: null,
     createdAt: new Date(Date.now() - ++n * 5e6).toISOString(),
