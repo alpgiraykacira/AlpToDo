@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { animate, motion, useReducedMotion } from "motion/react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { SOFT } from "@/lib/motion";
 import { addDays, dayDiff, fmtDate } from "@/lib/dates";
 import { weeklyDone, type DoneEvent } from "@/lib/insights";
 import { labelCounts } from "@/lib/labels";
@@ -10,6 +12,38 @@ import type { Item } from "@/lib/types";
 
 /** Grafikte gösterilen hafta sayısı (son 7 gün dahil). */
 const WEEKS = 8;
+
+/** Sayı, değişince eskisinden yenisine akarak sayar. */
+function CountUp({ value }: { value: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const from = useRef(0);
+  const reduce = useReducedMotion();
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (reduce) {
+      el.textContent = String(value);
+      return;
+    }
+    const c = animate(from.current, value, {
+      duration: 0.7,
+      ease: [0.16, 1, 0.3, 1],
+      onUpdate: (v) => {
+        from.current = v;
+        el.textContent = String(Math.round(v));
+      },
+    });
+    return () => c.stop();
+  }, [value, reduce]);
+  return <span ref={ref}>{value}</span>;
+}
+
+/** İmleci izleyen ışık: kartın içinde --mx/--my koordinatlarını günceller (CSS çizer). */
+const spot = (e: PointerEvent<HTMLElement>) => {
+  const r = e.currentTarget.getBoundingClientRect();
+  e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
+  e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`);
+};
 
 /** Bugün dahil bütün haftaların olayları (demo modunda yok). */
 type History = { state: "loading" } | { state: "error" } | { state: "ready"; events: DoneEvent[] | null };
@@ -51,13 +85,13 @@ export function Insights({ items, store, revision }: { items: Item[]; store: Sto
   return (
     <>
       <div className="stats">
-        <div className="stat"><b>{current}</b><span>Son 7 günde biten</span></div>
-        <div className="stat"><b>{open.length}</b><span>Açık görev</span></div>
-        <div className="stat"><b style={{ color: late ? "var(--p1)" : "inherit" }}>{late}</b><span>Geciken</span></div>
-        <div className="stat"><b>{p1}</b><span>Açık P1</span></div>
+        <div className="stat" onPointerMove={spot}><b><CountUp value={current} /></b><span>Son 7 günde biten</span></div>
+        <div className="stat" onPointerMove={spot}><b><CountUp value={open.length} /></b><span>Açık görev</span></div>
+        <div className="stat" onPointerMove={spot}><b style={{ color: late ? "var(--p1)" : "inherit" }}><CountUp value={late} /></b><span>Geciken</span></div>
+        <div className="stat" onPointerMove={spot}><b><CountUp value={p1} /></b><span>Açık P1</span></div>
       </div>
       <div className="panels">
-        <div className="panel wide">
+        <div className="panel wide" onPointerMove={spot}>
           <h2>Haftalık tamamlanan görev</h2>
           {!hasPast && (
             <p className="note" style={{ marginTop: 0 }}>
@@ -74,7 +108,12 @@ export function Insights({ items, store, revision }: { items: Item[]; store: Sto
               <div className="bars">
                 {values.map((v, k) => (
                   <div key={k} className="bcol">
-                    <div className={`bar ${k === last ? "cur" : ""}`} style={{ height: `${(v / max) * 100}%` }} />
+                    <motion.div
+                      className={`bar ${k === last ? "cur" : ""}`}
+                      initial={{ height: 0 }}
+                      animate={{ height: `${(v / max) * 100}%` }}
+                      transition={{ ...SOFT, delay: k * 0.05 }}
+                    />
                     {v > 0 && <span className="bv" style={{ bottom: `calc(${(v / max) * 100}% + 4px)` }}>{v}</span>}
                   </div>
                 ))}
@@ -95,22 +134,22 @@ export function Insights({ items, store, revision }: { items: Item[]; store: Sto
               "Her tamamlama ayrı sayılır; geri alınanlar düşülür. Olay kaydı olmayan eski görevlerin son tamamlanma tarihi kullanılır."}
           </div>
         </div>
-        <div className="panel">
+        <div className="panel" onPointerMove={spot}>
           <h2>Açık görevler, önceliğe göre</h2>
           {byPriority.map(([p, n]) => (
             <div key={p} className="hb">
               <span>{p ? `P${p}` : "Yok"}</span>
-              <div className="track"><div className="fill" style={{ width: `${(n / priorityMax) * 100}%`, background: `var(--p${p || 4})` }} /></div>
+              <div className="track"><motion.div className="fill" initial={{ width: 0 }} animate={{ width: `${(n / priorityMax) * 100}%` }} transition={SOFT} style={{ background: `var(--p${p || 4})` }} /></div>
               <em>{n}</em>
             </div>
           ))}
         </div>
-        <div className="panel">
+        <div className="panel" onPointerMove={spot}>
           <h2>En çok kullanılan etiketler</h2>
           {labels.map(([name, n]) => (
             <div key={name} className="hb">
               <span className="tg">@{name}</span>
-              <div className="track"><div className="fill" style={{ width: `${(n / labelMax) * 100}%` }} /></div>
+              <div className="track"><motion.div className="fill" initial={{ width: 0 }} animate={{ width: `${(n / labelMax) * 100}%` }} transition={SOFT} /></div>
               <em>{n}</em>
             </div>
           ))}

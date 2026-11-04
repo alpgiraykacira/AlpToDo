@@ -1,6 +1,8 @@
 "use client";
 
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SPRING } from "@/lib/motion";
 import { addDays, fmtDate, todayHeading } from "@/lib/dates";
 import { labelCounts } from "@/lib/labels";
 import { rules } from "@/lib/rules";
@@ -400,7 +402,7 @@ export default function App({ mode, initial, email }: AppProps) {
   const showFilterRow = showPriorityFilter || (Boolean(labelFilter) && view !== "inbox" && view !== "insights");
 
   return (
-    <>
+    <MotionConfig reducedMotion="user">
       <div className={`app ${selected ? "has-detail" : ""} ${capturing ? "capturing" : ""}`}>
         <Sidebar
           view={view}
@@ -479,7 +481,13 @@ export default function App({ mode, initial, email }: AppProps) {
         </main>
 
         {selected && (
-          <section className="detail" aria-label="Öğe detayı">
+          <motion.section
+            className="detail"
+            aria-label="Öğe detayı"
+            initial={{ opacity: 0, x: 28 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={SPRING}
+          >
             <Detail
               key={selected.id}
               item={selected}
@@ -492,7 +500,7 @@ export default function App({ mode, initial, email }: AppProps) {
               onDetach={detach}
               openFile={openFile}
             />
-          </section>
+          </motion.section>
         )}
         <div className="scrim" onClick={closeCapture} />
       </div>
@@ -500,41 +508,63 @@ export default function App({ mode, initial, email }: AppProps) {
       <TabBar view={view} inbox={counts.inbox} onView={goView} />
       <button className="fab" aria-label="Yeni ekle" onClick={() => setCapturing(true)}><Icon n="plus" s={26} /></button>
 
-      {paletteOpen && (
-        <Palette
-          items={items}
-          actions={actions}
-          onClose={() => {
-            setPaletteOpen(false);
-            // Odak, palet açılmadan önceki satıra döner.
-            if (paletteTarget) setTimeout(() => focusRow(paletteTarget), 30);
-          }}
-          onView={goView}
-          onLabel={goLabel}
-          onItem={(id) => setSelId(id)}
-        />
-      )}
+      <AnimatePresence>
+        {paletteOpen && (
+          <Palette
+            key="palette"
+            items={items}
+            actions={actions}
+            onClose={() => {
+              setPaletteOpen(false);
+              // Odak, palet açılmadan önceki satıra döner.
+              if (paletteTarget) setTimeout(() => focusRow(paletteTarget), 30);
+            }}
+            onView={goView}
+            onLabel={goLabel}
+            onItem={(id) => setSelId(id)}
+          />
+        )}
+        {shortcutsOpen && <Shortcuts key="shortcuts" onClose={() => setShortcutsOpen(false)} />}
+      </AnimatePresence>
 
-      {shortcutsOpen && <Shortcuts onClose={() => setShortcutsOpen(false)} />}
-
-      {chord && <div className="chord" role="status">g · i Inbox · t Bugün · u Yaklaşan · a Tümü · n Notlar · b Pano · s Analiz</div>}
-
-      {toast && (
-        <div className="toast" role="status">
-          <span>{toast.message}</span>
-          {toast.undo && (
-            <button
-              onClick={() => {
-                toast.undo?.();
-                setToast(null);
-              }}
-            >
-              Geri al
-            </button>
-          )}
-        </div>
-      )}
-    </>
+      <AnimatePresence>
+        {chord && (
+          <motion.div
+            key="chord"
+            className="chord"
+            role="status"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={SPRING}
+          >
+            g · i Inbox · t Bugün · u Yaklaşan · a Tümü · n Notlar · b Pano · s Analiz
+          </motion.div>
+        )}
+        {toast && (
+          <motion.div
+            key="toast"
+            className="toast"
+            role="status"
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.97 }}
+            transition={SPRING}
+          >
+            <span>{toast.message}</span>
+            {toast.undo && (
+              <button
+                onClick={() => {
+                  toast.undo?.();
+                  setToast(null);
+                }}
+              >
+                Geri al
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </MotionConfig>
   );
 }
-
