@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SPRING } from "@/lib/motion";
 import { addDays, fmtDate, todayHeading } from "@/lib/dates";
 import { labelCounts } from "@/lib/labels";
-import { rules } from "@/lib/rules";
+import { isNote, rules } from "@/lib/rules";
 import { demoStore } from "@/lib/store/demo";
 import { supabaseStore } from "@/lib/store/supabase";
 import { pickAllowed, uniqueName } from "@/lib/files";
@@ -216,20 +216,22 @@ export default function App({ mode, initial, email }: AppProps) {
         return;
       }
       if (!id) return;
+      // Notlar görev olmaz: tamamla, öncelik ve tarih kısayolları notlarda çalışmaz.
+      const noteRow = items.some((x) => x.id === id && isNote(x));
       if (key === "e") {
         e.preventDefault();
         setSelId(id);
         setTimeout(() => document.querySelector<HTMLElement>(".detail .d-title")?.focus(), 60);
-      } else if (key === "x" || (key === " " && onRow)) {
+      } else if (!noteRow && (key === "x" || (key === " " && onRow))) {
         e.preventDefault();
         const it = items.find((x) => x.id === id);
         // Tekrarlayan görevin kendi bildirimi ve geri alması var (setStatus).
         if (it?.recurrence && it.due && it.status !== "done") keepCursor(id, () => toggleDone(id));
         else keepCursor(id, () => withUndo(id, it?.status === "done" ? "yeniden açıldı" : "tamamlandı", () => toggleDone(id)));
-      } else if (/^[0-4]$/.test(key)) {
+      } else if (!noteRow && /^[0-4]$/.test(key)) {
         e.preventDefault();
         keepCursor(id, () => withUndo(id, key === "0" ? "önceliği kaldırıldı" : `önceliği P${key}`, () => setPriority(id, Number(key) as Priority)));
-      } else if (key === "t" || key === "y") {
+      } else if (!noteRow && (key === "t" || key === "y")) {
         e.preventDefault();
         keepCursor(id, () => withUndo(id, key === "t" ? "bugüne alındı" : "yarına ertelendi", () => setDue(id, addDays(key === "t" ? 0 : 1))));
       }
@@ -377,7 +379,7 @@ export default function App({ mode, initial, email }: AppProps) {
   const target = items.find((i) => i.id === paletteTarget) ?? null;
   const actions: PaletteAction[] = [
     { label: "Kısayolları göster", sub: "?", icon: "list", run: () => setShortcutsOpen(true) },
-    ...(target
+    ...(target && !isNote(target)
       ? [
           { label: target.status === "done" ? "Tamamlamayı geri al" : "Tamamla", icon: "check" as const, run: () => toggleDone(target.id) },
           { label: "Bugüne al", icon: "sun" as const, run: () => setDue(target.id, addDays(0)) },

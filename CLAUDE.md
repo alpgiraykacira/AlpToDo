@@ -82,9 +82,12 @@ Veri katmanı `Store` arayüzünün arkasında; bileşenler Supabase'i doğrudan
 
 ## Alan kararları (neden böyle)
 
-- **Not = görev, sadece `status` farkı.** Not'a durum/öncelik/tarih/tekrar verilince göreve dönüşür.
+- **Not = görev, sadece `status` farkı; ama not asla göreve dönüşmez.** Ayıklanmış not (`status` null ve `inbox`
+  değil) durum, öncelik, tarih ya da tekrar alamaz: `rules.ts` bu değişiklikleri boş yama döndürerek yok sayar
+  (`isNote`), Detay'da bu alanlar gösterilmez, palet ve klavye kısayolları (x, 0–4, t, y) notlarda çalışmaz.
   Kurallar `rules.ts` içinde, başka yere dağıtma. Notlar görünümünde ayrı ekleme alanı var
-  (`NoteCapture`: başlık, içerik, etiket); orada `!1`, "yarın" gibi görev sözdizimi ayrıştırılmaz, not hiç göreve dönüşmez.
+  (`NoteCapture`: başlık, içerik, etiket); orada `!1`, "yarın" gibi görev sözdizimi ayrıştırılmaz.
+  Veritabanı bunu henüz zorlamıyor (yalnızca arayüz/kural katmanı); istenirse yeni bir migration ile eklenir.
 - **Inbox:** hızlı eklemede öncelik/tarih/tekrar varsa görev, sadece etiket varsa not, hiçbiri yoksa Inbox.
   Inbox'tan "Bugün" (göreve çevirip bugüne atar) ya da "Not" ile çıkarılır.
 - **Etiket:** `@etiket` (ve `#etiket`). Küçük harf, aksansız karşılaştırılır (`toplanti` = `toplantı`);
