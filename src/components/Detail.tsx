@@ -5,7 +5,7 @@ import { addDays, fmtTimestamp } from "@/lib/dates";
 import { canonicalLabel } from "@/lib/labels";
 import { DEFAULT_RULE } from "@/lib/recurrence";
 import { Markdown } from "@/lib/markdown";
-import { isTask, rules } from "@/lib/rules";
+import { isNote, isTask, rules } from "@/lib/rules";
 import {
   PRIORITY_LABEL,
   STATUS_LABEL,
@@ -39,6 +39,7 @@ const WEEKDAY_CHIPS: [number, string][] = [[1, "Pzt"], [2, "Sal"], [3, "Çar"], 
 
 export function Detail({ item, knownLabels, onPatch, onStatus, onClose, onDelete, onAttach, onDetach, openFile }: DetailProps) {
   const task = isTask(item);
+  const note = isNote(item);
   const [revealed, setRevealed] = useState(false);
   const [editing, setEditing] = useState(false);
   const [labelText, setLabelText] = useState("");
@@ -131,7 +132,7 @@ export function Detail({ item, knownLabels, onPatch, onStatus, onClose, onDelete
           }}
         />
 
-        {!task && (
+        {item.inbox && (
           <div className="nhint">
             <span>Bu bir not. Durum, öncelik ya da tarih verirsen göreve dönüşür.</span>
             <button className="mini" onClick={() => onStatus(item.id, "todo")}>Göreve çevir</button>
@@ -139,6 +140,8 @@ export function Detail({ item, knownLabels, onPatch, onStatus, onClose, onDelete
         )}
 
         <div className="props">
+          {!note && (
+            <>
           <label htmlFor="f-status">Durum</label>
           <select
             id="f-status"
@@ -239,6 +242,9 @@ export function Detail({ item, knownLabels, onPatch, onStatus, onClose, onDelete
                 <option value="due">Bitiş tarihine göre</option>
                 <option value="done">Tamamladığım günden</option>
               </select>
+            </>
+          )}
+
             </>
           )}
 

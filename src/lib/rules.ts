@@ -1,9 +1,11 @@
-import { isoDate, startOfToday } from "./dates";
-import { firstOccurrence, nextOccurrence } from "./recurrence";
+import { isoDate, startOfToday } from "./dates.ts";
+import { firstOccurrence, nextOccurrence } from "./recurrence.ts";
 import type { Item, ItemPatch, Priority, Recurrence, Status } from "./types";
 
 export const isTask = (i: Item) => i.status !== null;
 export const isOpen = (i: Item) => i.status !== null && i.status !== "done";
+/** Ayıklanmış not: durum, öncelik, tarih ve tekrar alamaz, hiçbir koşulda göreve dönüşmez. Inbox öğesi henüz not değildir. */
+export const isNote = (i: Item) => i.status === null && !i.inbox;
 
 const todayIso = () => isoDate(startOfToday());
 
@@ -13,6 +15,7 @@ const todayIso = () => isoDate(startOfToday());
  */
 export const rules = {
   status(i: Item, status: Status | null): ItemPatch & { completedAt?: string | null } {
+    if (isNote(i)) return {};
     // Tekrarlayan görev "bitti" olmaz: tarihi sonraki oluşuma kayar, alt maddeler sıfırlanır.
     if (status === "done" && i.recurrence && i.due) {
       return {
@@ -30,13 +33,16 @@ export const rules = {
     };
   },
   priority(i: Item, priority: Priority): ItemPatch {
+    if (isNote(i)) return {};
     return priority ? { priority, inbox: false, status: i.status ?? "todo" } : { priority };
   },
   due(i: Item, due: string | null): ItemPatch {
+    if (isNote(i)) return {};
     if (!due) return { due: null, recurrence: null }; // tarihsiz görev tekrarlayamaz
     return { due, inbox: false, status: i.status ?? "todo" };
   },
   recurrence(i: Item, recurrence: Recurrence | null): ItemPatch {
+    if (isNote(i)) return {};
     if (!recurrence) return { recurrence: null };
     return {
       recurrence,

@@ -1,5 +1,8 @@
 "use client";
 
+import { motion } from "motion/react";
+import { SPRING } from "@/lib/motion";
+
 import { useEffect, useRef } from "react";
 import { Icon } from "./icons";
 
@@ -45,8 +48,24 @@ export function Shortcuts({ onClose }: { onClose: () => void }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => closeRef.current?.focus(), []);
   return (
-    <div className="pal" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="pal-box keys" role="dialog" aria-modal="true" aria-label="Klavye kısayolları">
+    <motion.div
+      className="pal"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.14 }}
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        className="pal-box keys"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Klavye kısayolları"
+        initial={{ opacity: 0, y: -14, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -8, scale: 0.98 }}
+        transition={SPRING}
+      >
         <div className="keys-top">
           <h2>Klavye kısayolları</h2>
           <button ref={closeRef} className="ib" aria-label="Kapat" onClick={onClose}><Icon n="x" s={18} /></button>
@@ -74,7 +93,7 @@ export function Shortcuts({ onClose }: { onClose: () => void }) {
           ))}
         </div>
         <div className="pal-foot">Yazı alanındayken kısayollar çalışmaz; Esc ile alandan çık.</div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
+import { motion } from "motion/react";
 import { useState } from "react";
+import { SPRING } from "@/lib/motion";
 import type { ViewKey } from "@/lib/types";
 import { Icon } from "./icons";
 import { TABS, VIEWS } from "./nav";
@@ -26,6 +28,8 @@ export function Sidebar({ view, activeLabel, counts, labels, mode, email, onView
   const [labelsOpen, setLabelsOpen] = useState(false);
   // Inbox ve Analiz etiketle filtrelenmez.
   const labelsUsable = view !== "inbox" && view !== "insights";
+  // İmleç hangi satırdaysa vurgu ona kayar (akışkan ipucu etkisi).
+  const [hover, setHover] = useState<string | null>(null);
   return (
     <aside className="side" aria-label="Gezinme">
       <div className="brand">
@@ -41,12 +45,21 @@ export function Sidebar({ view, activeLabel, counts, labels, mode, email, onView
         Ara veya git<kbd>Ctrl K</kbd>
       </button>
       <div className="side-scroll">
-      <nav className="nav">
+      <nav className="nav" onMouseLeave={() => setHover(null)}>
         {VIEWS.map((v) => {
           const n = (counts as Record<string, number>)[v.k];
           const current = view === v.k;
           return (
-            <button key={v.k} title={v.l} onClick={() => onView(v.k)} aria-current={current ? "page" : undefined}>
+            <button
+              key={v.k}
+              title={v.l}
+              onClick={() => onView(v.k)}
+              onMouseEnter={() => setHover(v.k)}
+              onFocus={() => setHover(v.k)}
+              aria-current={current ? "page" : undefined}
+            >
+              {hover === v.k && !current && <motion.span layoutId="nav-hover" className="nav-hover" transition={SPRING} />}
+              {current && <motion.span layoutId="nav-active" className="nav-active" transition={SPRING} />}
               <Icon n={v.i} />
               <span>{v.l}</span>
               {n ? <span className={`count ${v.k === "inbox" ? "hot" : ""}`}>{n}</span> : null}

@@ -1,11 +1,13 @@
 "use client";
 
+import { AnimatePresence, motion } from "motion/react";
 import { dueLabel } from "@/lib/dates";
 import { describeRecurrence } from "@/lib/recurrence";
 import { isTask } from "@/lib/rules";
 import { snippet, type Group } from "@/lib/views";
 import type { Item, ViewKey } from "@/lib/types";
 import { STATUS_LABEL } from "@/lib/types";
+import { SPRING } from "@/lib/motion";
 import { Icon } from "./icons";
 
 export function Meta({ item, showStatus }: { item: Item; showStatus: boolean }) {
@@ -57,13 +59,19 @@ interface RowProps {
   onOpen: (id: string) => void;
   onToggle: (id: string) => void;
   onTriage: (id: string, to: "today" | "note") => void;
+  index: number;
 }
 
-function Row({ item, view, selected, fresh, onOpen, onToggle, onTriage }: RowProps) {
+function Row({ item, view, selected, fresh, onOpen, onToggle, onTriage, index }: RowProps) {
   const task = isTask(item);
   const note = !task && !item.inbox ? snippet(item) : "";
   return (
-    <div
+    <motion.div
+      layout="position"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0, transition: { ...SPRING, delay: Math.min(index, 8) * 0.03 } }}
+      exit={{ opacity: 0, x: -28, height: 0, paddingTop: 0, paddingBottom: 0, transition: { duration: 0.18 } }}
+      transition={SPRING}
       className={`row ${item.status === "done" ? "done" : ""} ${selected ? "sel" : ""} ${fresh}`}
       role="listitem"
       data-rid={item.id}
@@ -77,13 +85,15 @@ function Row({ item, view, selected, fresh, onOpen, onToggle, onTriage }: RowPro
       {item.inbox ? (
         <span className="ring" />
       ) : task ? (
-        <button
+        <motion.button
+          whileTap={{ scale: 0.82 }}
+          transition={SPRING}
           className={`chk p${item.priority} ${item.status === "done" ? "on" : ""}`}
           aria-label={item.status === "done" ? "Tamamlandı, geri al" : "Tamamla"}
           onClick={(e) => { e.stopPropagation(); onToggle(item.id); }}
         >
           <Icon n="check" s={12} />
-        </button>
+        </motion.button>
       ) : (
         <span className="noteico"><Icon n="note" /></span>
       )}
@@ -96,7 +106,7 @@ function Row({ item, view, selected, fresh, onOpen, onToggle, onTriage }: RowPro
         <Meta item={item} showStatus={view !== "all"} />
       </div>
       <div className="rs"><Side item={item} onTriage={onTriage} /></div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -135,9 +145,11 @@ export function ListView({ groups, view, selId, fresh, onOpen, onToggle, onTriag
             <span>{g.items.length}</span>
           </h2>
           <div role="list" aria-labelledby={`grp-${g.label}`}>
-            {g.items.map((item) => (
+            <AnimatePresence initial>
+            {g.items.map((item, index) => (
               <Row
                 key={item.id}
+                index={index}
                 item={item}
                 view={view}
                 selected={selId === item.id}
@@ -147,6 +159,7 @@ export function ListView({ groups, view, selId, fresh, onOpen, onToggle, onTriag
                 onTriage={onTriage}
               />
             ))}
+            </AnimatePresence>
           </div>
         </section>
       ))}

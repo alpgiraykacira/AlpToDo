@@ -1,5 +1,8 @@
 "use client";
 
+import { motion } from "motion/react";
+import { SPRING } from "@/lib/motion";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { labelCounts, lower, norm } from "@/lib/labels";
 import { isTask } from "@/lib/rules";
@@ -78,8 +81,24 @@ export function Palette({ items, actions, onClose, onView, onLabel, onItem }: Pa
   };
 
   return (
-    <div className="pal" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="pal-box" role="dialog" aria-modal="true" aria-label="Ara">
+    <motion.div
+      className="pal"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.14 }}
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        className="pal-box"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Ara"
+        initial={{ opacity: 0, y: -14, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -8, scale: 0.98 }}
+        transition={SPRING}
+      >
         <input
           ref={inputRef}
           type="text"
@@ -121,6 +140,7 @@ export function Palette({ items, actions, onClose, onView, onLabel, onItem }: Pa
                 className={k === active ? "on" : ""}
                 onClick={() => go(r)}
               >
+                {k === active && <motion.span layoutId="pal-hl" className="pal-hl" transition={SPRING} />}
                 <Icon n={r.icon} s={16} />
                 <span>{r.label}</span>
                 <small>{r.sub}</small>
@@ -131,7 +151,7 @@ export function Palette({ items, actions, onClose, onView, onLabel, onItem }: Pa
           )}
         </ul>
         <div className="pal-foot">↑↓ gez · Enter seç · Esc kapat</div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
