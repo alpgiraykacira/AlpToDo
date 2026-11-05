@@ -163,6 +163,7 @@ button{cursor:pointer}
 .snip{margin-top:1px;color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rm{display:flex;flex-wrap:wrap;gap:2px 10px;margin-top:3px;font-size:12px;color:var(--muted);align-items:center}
 .tg{font:400 12px var(--font-mono)}
+.ct{font:400 11.5px var(--font-mono);color:var(--muted);opacity:.8;white-space:nowrap}
 .st{font:500 11px var(--font-mono);text-transform:uppercase;letter-spacing:.05em}
 .st.doing{color:var(--accent)} .st.waiting{color:var(--p2)}
 .rs{display:flex;align-items:center;gap:8px;white-space:nowrap}

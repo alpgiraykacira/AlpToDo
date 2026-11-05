@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import { dueLabel } from "@/lib/dates";
+import { dueLabel, fmtStamp, fmtTimestamp } from "@/lib/dates";
 import { describeRecurrence } from "@/lib/recurrence";
 import { isTask } from "@/lib/rules";
 import { snippet, type Group } from "@/lib/views";
@@ -21,6 +21,9 @@ export function Meta({ item, showStatus }: { item: Item; showStatus: boolean }) 
         <span key={l} className="tg">@{l}</span>
       ))}
       {item.checklist.length > 0 && <span className="tg">{done}/{item.checklist.length}</span>}
+      <time className="ct" dateTime={item.createdAt} title={`Eklendi ${fmtTimestamp(item.createdAt)}`}>
+        {fmtStamp(item.createdAt)}
+      </time>
     </div>
   );
 }

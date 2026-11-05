@@ -29,8 +29,24 @@ export function fmtDate(date: string): string {
   return new Date(date + "T00:00:00").toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
 }
 
+const fmtTime = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+/** Tam an: "5 Kas 2026 14:32" */
 export function fmtTimestamp(ts: string): string {
-  return new Date(ts).toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
+  const d = new Date(ts);
+  return `${d.toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" })} ${fmtTime(d)}`;
+}
+
+/** Listeler için kısa an: "Bugün 14:32", "Dün 09:05", "3 Kas 14:32"; başka yıldaysa "3 Kas 2025". */
+export function fmtStamp(ts: string): string {
+  const d = new Date(ts);
+  const n = dayDiff(isoDate(d));
+  if (n === 0) return `Bugün ${fmtTime(d)}`;
+  if (n === -1) return `Dün ${fmtTime(d)}`;
+  if (d.getFullYear() !== new Date().getFullYear()) {
+    return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" });
+  }
+  return `${d.toLocaleDateString("tr-TR", { day: "numeric", month: "short" })} ${fmtTime(d)}`;
 }
 
 export function todayHeading(): string {
