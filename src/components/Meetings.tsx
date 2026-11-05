@@ -9,6 +9,9 @@ import { Icon } from "./icons";
 const longDate = (date: string) =>
   new Date(date + "T00:00:00").toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
 
+/** Liste kısa kalsın, altındaki notlar görünür olsun: varsayılan olarak en son bu kadar toplantı gösterilir. */
+const SHOWN = 3;
+
 interface GroupProps {
   meetings: Meeting[];
   selId: string | null;
@@ -22,6 +25,12 @@ export function MeetingsGroup({ meetings, selId, known, onOpen, onCreate }: Grou
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [tags, setTags] = useState("");
+  const [all, setAll] = useState(false);
+  const sorted = sortedMeetings(meetings);
+  const shown = all ? sorted : sorted.slice(0, SHOWN);
+  // Açık toplantı listede gizli kalmasın.
+  const hidden = sorted.find((m) => m.id === selId && !shown.includes(m));
+  if (hidden) shown.push(hidden);
   const close = () => {
     setCreating(false);
     setName("");
@@ -53,7 +62,7 @@ export function MeetingsGroup({ meetings, selId, known, onOpen, onCreate }: Grou
         </form>
       )}
       <div role="list" aria-labelledby="grp-meetings">
-        {sortedMeetings(meetings).map((m) => {
+        {shown.map((m) => {
           const last = sortedNotes(m)[0];
           return (
             <div
@@ -88,6 +97,11 @@ export function MeetingsGroup({ meetings, selId, known, onOpen, onCreate }: Grou
           );
         })}
       </div>
+      {sorted.length > SHOWN && (
+        <button className="mt-more" onClick={() => setAll(!all)}>
+          {all ? "Daha az göster" : `${sorted.length - shown.length} toplantı daha`}
+        </button>
+      )}
     </section>
   );
 }

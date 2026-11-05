@@ -452,3 +452,5 @@ body::after{right:-16vmax;bottom:-20vmax;background:var(--glow-2)}
 .mt-li.todo:hover .mt-box{background:var(--accent-soft)}
 .mt-li.todo.done .mt-box{background:var(--accent)}
 .mt-li.todo.done{color:var(--muted);text-decoration:line-through}
+.mt-more{display:block;width:100%;border:0;border-bottom:1px solid var(--line);background:none;padding:8px;text-align:left;font:500 12px var(--font-mono);color:var(--muted)}
+.mt-more:hover{color:var(--accent);background:var(--surface-2)}
