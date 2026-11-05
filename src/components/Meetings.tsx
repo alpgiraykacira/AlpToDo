@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { fmtDate, isoDate } from "@/lib/dates";
-import { noteBlocks, parseMeetingLabels, previewLine, relativeDay, sortedMeetings, sortedNotes } from "@/lib/meetings";
+import { noteBlocks, parseMeetingLabels, previewLine, relativeDay, sortedMeetings, sortedNotes, toggleTodo } from "@/lib/meetings";
 import type { Meeting, MeetingNote } from "@/lib/types";
 import { Icon } from "./icons";
 
@@ -242,8 +242,23 @@ export function MeetingDetail({ meeting, knownLabels, onClose, onRename, onLabel
                       </span>
                     </div>
                     <div className="mt-body">
-                      {noteBlocks(n.body).map((b, k) =>
-                        b.kind === "p" ? <p key={k}>{b.text}</p> : <div key={k} className={`mt-li ${b.kind}`}>{b.text}</div>,
+                      {noteBlocks(n.body).map((b) =>
+                        b.kind === "p" ? (
+                          <p key={b.line}>{b.text}</p>
+                        ) : b.kind === "todo" ? (
+                          <button
+                            key={b.line}
+                            className={`mt-li todo ${b.done ? "done" : ""}`}
+                            role="checkbox"
+                            aria-checked={b.done}
+                            onClick={() => onSaveNote(meeting.id, { ...n, body: toggleTodo(n.body, b.line) })}
+                          >
+                            <span className="mt-box">{b.done && <Icon n="check" s={10} />}</span>
+                            {b.text}
+                          </button>
+                        ) : (
+                          <div key={b.line} className="mt-li li">{b.text}</div>
+                        ),
                       )}
                     </div>
                   </li>

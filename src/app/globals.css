@@ -445,5 +445,10 @@ body::after{right:-16vmax;bottom:-20vmax;background:var(--glow-2)}
 .mt-ops button:hover{color:var(--accent);background:var(--surface-2)}
 .mt-body p{margin:0 0 5px;overflow-wrap:anywhere}
 .mt-li{position:relative;margin:2px 0;padding-left:18px;overflow-wrap:anywhere}
+.mt-li.todo{padding-left:0}
 .mt-li.li::before{content:"";position:absolute;left:6px;top:.62em;width:4px;height:4px;border-radius:50%;background:var(--muted)}
-.mt-li.todo::before{content:"";position:absolute;left:0;top:.35em;width:12px;height:12px;border:1.5px solid var(--accent);border-radius:3px}
+.mt-li.todo{display:flex;gap:8px;align-items:flex-start;width:100%;padding:2px 0;border:0;background:none;text-align:left;cursor:pointer}
+.mt-box{flex:none;display:grid;place-items:center;width:14px;height:14px;margin-top:.3em;border:1.5px solid var(--accent);border-radius:4px;color:var(--accent-fg)}
+.mt-li.todo:hover .mt-box{background:var(--accent-soft)}
+.mt-li.todo.done .mt-box{background:var(--accent)}
+.mt-li.todo.done{color:var(--muted);text-decoration:line-through}

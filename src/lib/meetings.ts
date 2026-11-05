@@ -52,18 +52,33 @@ export function parseMeetingLabels(raw: string, known: string[]): { labels: stri
 export interface NoteBlock {
   kind: "p" | "li" | "todo";
   text: string;
+  /** Satırın metindeki sırası (0'dan); `toggleTodo` bununla işaretler. */
+  line: number;
+  /** Yalnızca yapılacak işte: `- [x]` ile işaretlenmiş. */
+  done: boolean;
 }
 
 /** Not metnini satırlara ayırır: "- madde", "- [ ] yapılacak iş" ve düz paragraf. */
 export function noteBlocks(body: string): NoteBlock[] {
   const out: NoteBlock[] = [];
-  for (const line of body.split("\n")) {
-    const m = line.match(/^\s*[-*]\s+(\[[ xX]\]\s+)?(.*)$/);
+  body.split("\n").forEach((raw, line) => {
+    const m = raw.match(/^\s*[-*]\s+(\[([ xX])\]\s+)?(.*)$/);
     if (m) {
-      if (m[2].trim()) out.push({ kind: m[1] ? "todo" : "li", text: m[2].trim() });
-    } else if (line.trim()) {
-      out.push({ kind: "p", text: line.trim() });
+      if (m[3].trim()) out.push({ kind: m[1] ? "todo" : "li", text: m[3].trim(), line, done: m[2] === "x" || m[2] === "X" });
+    } else if (raw.trim()) {
+      out.push({ kind: "p", text: raw.trim(), line, done: false });
     }
-  }
+  });
   return out;
+}
+
+/** `line` numaralı satırdaki yapılacak işin kutusunu işaretler ya da kaldırır; başka bir satıra dokunmaz. */
+export function toggleTodo(body: string, line: number): string {
+  return body
+    .split("\n")
+    .map((raw, i) => {
+      if (i !== line) return raw;
+      return raw.replace(/^(\s*[-*]\s+)\[([ xX])\]/, (_, head: string, mark: string) => `${head}[${mark === " " ? "x" : " "}]`);
+    })
+    .join("\n");
 }

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { addDays } from "./dates.ts";
-import { noteBlocks, parseMeetingLabels, previewLine, relativeDay, sortedMeetings, sortedNotes } from "./meetings.ts";
+import { noteBlocks, parseMeetingLabels, toggleTodo, previewLine, relativeDay, sortedMeetings, sortedNotes } from "./meetings.ts";
 import type { Meeting } from "./types.ts";
 
 const note = (id: string, date: string, createdAt: string) => ({ id, date, body: "", createdAt });
@@ -57,9 +57,19 @@ test("etiketler var olanlarla eşleşir, tekrarsızdır, yeniler işaretlenir", 
 
 test("not metni: madde, yapılacak iş ve paragraf", () => {
   assert.deepEqual(noteBlocks("Genel\n- bir\n- [ ] iki\n* üç\n\n- "), [
-    { kind: "p", text: "Genel" },
-    { kind: "li", text: "bir" },
-    { kind: "todo", text: "iki" },
-    { kind: "li", text: "üç" },
+    { kind: "p", text: "Genel", line: 0, done: false },
+    { kind: "li", text: "bir", line: 1, done: false },
+    { kind: "todo", text: "iki", line: 2, done: false },
+    { kind: "li", text: "üç", line: 3, done: false },
   ]);
+});
+
+test("yapılacak iş kutusu işaretlenir, geri alınır; yalnızca o satır değişir", () => {
+  const body = "Genel\n- [ ] bir\n- [ ] iki\n- madde [ ] değil";
+  const once = toggleTodo(body, 2);
+  assert.equal(once, "Genel\n- [ ] bir\n- [x] iki\n- madde [ ] değil");
+  assert.deepEqual(noteBlocks(once).filter((b) => b.kind === "todo").map((b) => b.done), [false, true]);
+  assert.equal(toggleTodo(once, 2), body);
+  assert.equal(toggleTodo(body, 3), body, "onay kutusu olmayan satır değişmez");
+  assert.equal(toggleTodo(body, 0), body);
 });

@@ -94,7 +94,7 @@ Veri katmanı `Store` arayüzünün arkasında; bileşenler Supabase'i doğrudan
 - **Toplantı notları:** Notlar görünümünün en üstünde ayrı grup (`MeetingsGroup`); satıra basınca notlar sağ
   panelde açılır (`MeetingDetail`). Toplantı = ad + etiketler; her toplantının tarihli notları üst üste dizilir,
   en yeni toplantı tarihi üstte (geçmişe tarihli not da doğru yere oturur). Not metninde `- madde` ve `- [ ] iş`
-  gösterilir (onay kutusu yalnızca görsel, tıklanmaz). `items` tablosundan ayrı tablolar; not/görev kuralları
+  gösterilir; `- [ ]` kutusuna basınca metindeki satır `- [x]` olur (`toggleTodo`), tekrar basınca geri döner. `items` tablosundan ayrı tablolar; not/görev kuralları
   (`rules.ts`) buna uygulanmaz. Toplantı etiketleri kenar çubuğu etiket sayımına girmez, ama yazarken öneri
   listesine ve etiket filtresine girer. Demo: `sira.demo.meetings.v1`.
 - **Inbox:** hızlı eklemede öncelik/tarih/tekrar varsa görev, sadece etiket varsa not, hiçbiri yoksa Inbox.
