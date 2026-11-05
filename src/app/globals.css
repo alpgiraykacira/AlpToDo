@@ -199,7 +199,7 @@ button{cursor:pointer}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-top:16px}
 .stat{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface-2)}
 .stat b{display:block;font:600 28px/1.1 var(--font-display);font-variant-numeric:tabular-nums}
-.stat span{font-size:12.5px;color:var(--muted)}
+.stat>span{font-size:12.5px;color:var(--muted)}
 .panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:16px}
 .panel{border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
 .panel.wide{grid-column:1/-1}
@@ -471,7 +471,7 @@ body::after{right:-16vmax;bottom:-20vmax;background:var(--glow-2)}
 
 /* zemin: aurora yerine sabit grain katmanı (tıklamayı engellemez) */
 :root[data-theme="paper"] body::before{display:none}
-:root[data-theme="paper"] body::after{display:block;inset:0;width:auto;height:auto;z-index:200;border-radius:0;filter:none;animation:none;background:var(--grain);opacity:.32;mix-blend-mode:multiply}
+:root[data-theme="paper"] body::after{display:block;inset:0;width:auto;height:auto;z-index:200;border-radius:0;filter:none;animation:none;background:var(--grain);opacity:.24;mix-blend-mode:multiply}
 :root[data-theme="paper"] .app,
 :root[data-theme="paper"] .side,
 :root[data-theme="paper"] .detail{backdrop-filter:none;box-shadow:none}
