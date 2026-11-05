@@ -44,13 +44,14 @@ Arayüz geliştirirken en hızlı yol bu.
 
 ## Veritabanı
 
-`supabase/migrations/`, tarih sırasıyla: `20261027000000_init.sql`, `20261028000000_recurrence.sql`, `20261030000000_files.sql`.
-**Kullanıcı üçünü de Supabase'e uyguladı. Uygulanmış bir migration'ı düzenleme**, yeni bir dosya ekle
+`supabase/migrations/`, tarih sırasıyla: `20261027000000_init.sql`, `20261028000000_recurrence.sql`, `20261030000000_files.sql`, `20261105000000_meetings.sql`.
+**Kullanıcı ilk üçünü Supabase'e uyguladı; `meetings` migration'ı henüz uygulanmadı (SQL Editor'de çalıştırılacak). Uygulanmış bir migration'ı düzenleme**, yeni bir dosya ekle
 (`YYYYMMDDHHMMSS_ad.sql`) ve `supabase/tests/rls.sql` içinde `\i` ile yükle.
 
 - `items`: not ve görev tek tablo. **`status` null ise not.** Etiketler `text[]` (`labels`), kullanımdan
   türetilir (ayrı etiket tablosu yok; yeniden adlandırma için ileride bir SQL fonksiyonu gerekir).
   Yumuşak silme: `deleted_at`. Tekrar kuralı: `recurrence jsonb`.
+- `meetings` + `meeting_notes`: toplantı notları (bkz. Alan kararları). Toplantı yumuşak silinir (`deleted_at`), not kalıcı silinir.
 - `item_events`: durum, öncelik, tarih, etiket, `recurred`/`recurred_undone`, silme geçmişi. Analiz
   ekranının bugün dahil bütün haftaları bunu kullanıyor (`Store.doneHistory`, hesap `src/lib/insights.ts`).
 - Trigger'lar: `items_before_write` (updated_at, completed_at, last_done_at'i sunucu belirler),
@@ -72,10 +73,12 @@ src/lib/files.ts        dosya ek sınırları, boyut/ad yardımcıları (saf, te
 src/lib/labels.ts       etiket eşleştirme (norm/canonicalLabel)
 src/lib/recurrence.ts   sonraki tarih hesabı (saf fonksiyonlar, testli)
 src/lib/insights.ts     item_events + olayı olmayan eski öğelerden haftalık tamamlanan sayısı (weeklyDone, saf, testli)
+src/lib/meetings.ts     toplantı notu mantığı (sıralama, özet, etiket ayrıştırma, not satırları; saf, testli)
+src/lib/useMeetings.ts  toplantılar için iyimser güncelleme, sıralı yazma, hatada geri alma
 src/lib/cursor.ts       liste imleci: satır/kart odağı (data-rid), j/k ile gezinme; kısayollar App.tsx içinde, sayfa Shortcuts.tsx
 src/lib/store/          Store arayüzü: supabase.ts (gerçek) ve demo.ts (localStorage). rows.ts = satır eşlemesi
 src/lib/useItems.ts     iyimser güncelleme, debounce'lu yazma, hatada geri alma
-src/components/         App (durum + yerleşim), Sidebar, Capture, NoteCapture, ListView, Board, Detail, Insights, Palette, Shortcuts
+src/components/         App (durum + yerleşim), Sidebar, Capture, NoteCapture, ListView, Meetings, Board, Detail, Insights, Palette, Shortcuts
 ```
 
 Veri katmanı `Store` arayüzünün arkasında; bileşenler Supabase'i doğrudan çağırmaz.
@@ -88,6 +91,12 @@ Veri katmanı `Store` arayüzünün arkasında; bileşenler Supabase'i doğrudan
   Kurallar `rules.ts` içinde, başka yere dağıtma. Notlar görünümünde ayrı ekleme alanı var
   (`NoteCapture`: başlık, içerik, etiket); orada `!1`, "yarın" gibi görev sözdizimi ayrıştırılmaz.
   Veritabanı bunu henüz zorlamıyor (yalnızca arayüz/kural katmanı); istenirse yeni bir migration ile eklenir.
+- **Toplantı notları:** Notlar görünümünün en üstünde ayrı grup (`MeetingsGroup`); satıra basınca notlar sağ
+  panelde açılır (`MeetingDetail`). Toplantı = ad + etiketler; her toplantının tarihli notları üst üste dizilir,
+  en yeni toplantı tarihi üstte (geçmişe tarihli not da doğru yere oturur). Not metninde `- madde` ve `- [ ] iş`
+  gösterilir (onay kutusu yalnızca görsel, tıklanmaz). `items` tablosundan ayrı tablolar; not/görev kuralları
+  (`rules.ts`) buna uygulanmaz. Toplantı etiketleri kenar çubuğu etiket sayımına girmez, ama yazarken öneri
+  listesine ve etiket filtresine girer. Demo: `sira.demo.meetings.v1`.
 - **Inbox:** hızlı eklemede öncelik/tarih/tekrar varsa görev, sadece etiket varsa not, hiçbiri yoksa Inbox.
   Inbox'tan "Bugün" (göreve çevirip bugüne atar) ya da "Not" ile çıkarılır.
 - **Etiket:** `@etiket` (ve `#etiket`). Küçük harf, aksansız karşılaştırılır (`toplanti` = `toplantı`);

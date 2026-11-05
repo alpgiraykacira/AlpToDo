@@ -1,4 +1,4 @@
-import type { FileRef, Item, ItemPatch } from "../types";
+import type { FileRef, Item, ItemPatch, Meeting, MeetingNote, MeetingPatch } from "../types";
 import type { DoneEvent } from "../insights";
 
 /** Veri katmanı. İki gerçekleştirmesi var: Supabase (gerçek) ve demo (localStorage). */
@@ -11,6 +11,13 @@ export interface Store {
   /** Açmak ya da indirmek için kısa ömürlü adres. */
   fileUrl(file: FileRef, download: boolean): Promise<string>;
   removeFile(file: FileRef): Promise<void>;
+  /** Toplantılar ve notları (silinmemiş olanlar). */
+  loadMeetings(): Promise<Meeting[]>;
+  createMeeting(meeting: Meeting): Promise<void>;
+  updateMeeting(id: string, patch: MeetingPatch): Promise<void>;
+  /** Notu ekler ya da aynı kimlikliyi günceller (silinen notu geri almak da buradan). */
+  saveMeetingNote(meetingId: string, note: MeetingNote): Promise<void>;
+  removeMeetingNote(id: string): Promise<void>;
   /** Bugün dahil son `weeks` haftanın tamamlama/geri alma olayları. Olay kaydı yoksa (demo) null. */
   doneHistory(weeks: number): Promise<DoneEvent[] | null>;
   /** Sadece demo modunda: örnek veriyi baştan yükler. */

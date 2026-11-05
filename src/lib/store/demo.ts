@@ -1,11 +1,36 @@
 import { MAX_DEMO_FILE_BYTES } from "../files";
-import { seedItems } from "../seed";
-import type { Item } from "../types";
+import { seedItems, seedMeetings } from "../seed";
+import type { Item, Meeting } from "../types";
 import type { Store } from "./types";
 
 const KEY = "sira.demo.v1";
 /** Demo dosyaları: dosya kimliği → data URL. Öğelerden ayrı, çünkü büyük olabilir. */
 const FILES_KEY = "sira.demo.files.v1";
+
+/** Demo toplantıları. Silinenler de saklanır (geri alınabilsin diye). */
+const MEETINGS_KEY = "sira.demo.meetings.v1";
+
+type StoredMeeting = Meeting & { deleted?: boolean };
+
+function readMeetings(): StoredMeeting[] | null {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(MEETINGS_KEY) ?? "null") as unknown;
+    return Array.isArray(parsed) ? (parsed as StoredMeeting[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeMeetings(meetings: StoredMeeting[]) {
+  try {
+    localStorage.setItem(MEETINGS_KEY, JSON.stringify(meetings));
+  } catch {
+    /* gizli pencere vb.: demo verisi kalıcı olmaz */
+  }
+}
+
+const visibleMeetings = (ms: StoredMeeting[]): Meeting[] =>
+  ms.filter((m) => !m.deleted).map(({ deleted: _deleted, ...m }) => m);
 
 /** Silinenler de saklanır (geri alınabilsin diye), Supabase'deki deleted_at gibi. */
 type Stored = Item & { deleted?: boolean };
@@ -52,6 +77,11 @@ const visible = (items: Stored[]): Item[] =>
 /** Supabase ayarlanmamışken kullanılan, tarayıcıda çalışan store. Aynı arayüzü sağlar. */
 export function demoStore(): Store {
   let items: Stored[] = [];
+  let meetings: StoredMeeting[] = [];
+  const saveMeetings = (next: StoredMeeting[]) => {
+    meetings = next;
+    writeMeetings(meetings);
+  };
   return {
     async load() {
       items = read() ?? seedItems();
@@ -91,6 +121,29 @@ export function demoStore(): Store {
       const { [file.id]: _gone, ...rest } = readFiles();
       localStorage.setItem(FILES_KEY, JSON.stringify(rest));
     },
+    async loadMeetings() {
+      meetings = readMeetings() ?? seedMeetings();
+      writeMeetings(meetings);
+      return visibleMeetings(meetings);
+    },
+    async createMeeting(meeting) {
+      saveMeetings([meeting, ...meetings]);
+    },
+    async updateMeeting(id, patch) {
+      saveMeetings(meetings.map((m) => (m.id === id ? { ...m, ...patch, deleted: patch.deleted ?? m.deleted } : m)));
+    },
+    async saveMeetingNote(meetingId, note) {
+      saveMeetings(
+        meetings.map((m) =>
+          m.id !== meetingId
+            ? m
+            : { ...m, notes: m.notes.some((n) => n.id === note.id) ? m.notes.map((n) => (n.id === note.id ? note : n)) : [...m.notes, note] },
+        ),
+      );
+    },
+    async removeMeetingNote(id) {
+      saveMeetings(meetings.map((m) => ({ ...m, notes: m.notes.filter((n) => n.id !== id) })));
+    },
     async doneHistory(weeks) {
       // Demo verisinde olay kaydı yok; grafik yalnızca öğelerden hesaplanır.
       return null;
@@ -103,6 +156,7 @@ export function demoStore(): Store {
       }
       items = seedItems();
       write(items);
+      saveMeetings(seedMeetings());
       return visible(items);
     },
   };

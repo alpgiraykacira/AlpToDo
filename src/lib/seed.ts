@@ -1,5 +1,5 @@
 import { addDays } from "./dates";
-import type { Item } from "./types";
+import type { Item, Meeting, MeetingNote } from "./types";
 
 /** Demo modu için örnek veri. Tarihler bugüne göre hesaplanır. */
 export function seedItems(): Item[] {
@@ -74,5 +74,36 @@ export function seedItems(): Item[] {
     mk({ title: "Ayşe'ye dönüş yap", inbox: true }),
     mk({ title: "Yeni laptop standı bak", inbox: true, labels: ["ekipman"] }),
     mk({ title: "Cuma toplantısı için gündem?", inbox: true }),
+  ];
+}
+
+/** Demo modu için örnek toplantılar. Notların tarihleri bugüne göre hesaplanır. */
+export function seedMeetings(): Meeting[] {
+  const at = (daysAgo: number) => new Date(Date.now() - daysAgo * 864e5).toISOString();
+  const note = (daysAgo: number, body: string): MeetingNote => ({
+    id: crypto.randomUUID(),
+    date: addDays(-daysAgo),
+    body,
+    createdAt: at(daysAgo),
+  });
+  return [
+    {
+      id: crypto.randomUUID(),
+      name: "Haftalık ekip toplantısı",
+      labels: ["ekip", "haftalık"],
+      createdAt: at(30),
+      notes: [
+        note(0, "- Sürüm için kod dondurma Cuma\n- Yeni onboarding akışı test aşamasında\n- [ ] Test ortamı verisini temizle\n- [ ] Sürüm notlarını yaz"),
+        note(7, "- Mobil görünümde kayma hatası bulundu, düzeltme yolda\n- Müşteri geri bildirimi: arama daha hızlı olmalı\n- [ ] Arama için ölçüm al"),
+        note(14, "Çeyrek hedefleri gözden geçirildi.\n- Öncelik: dosya ekleri ve tekrarlayan görevler\n- Analiz ekranı ertelendi"),
+      ],
+    },
+    {
+      id: crypto.randomUUID(),
+      name: "Aylık değerlendirme",
+      labels: ["yönetim", "aylık"],
+      createdAt: at(40),
+      notes: [note(5, "- Ekim hedefleri %80 tamamlandı\n- Kasım için bütçe onaylandı")],
+    },
   ];
 }

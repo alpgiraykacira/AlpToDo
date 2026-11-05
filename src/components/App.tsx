@@ -11,6 +11,7 @@ import { supabaseStore } from "@/lib/store/supabase";
 import { pickAllowed, uniqueName } from "@/lib/files";
 import type { FileRef } from "@/lib/types";
 import { useItems } from "@/lib/useItems";
+import { useMeetings } from "@/lib/useMeetings";
 import { counts as countItems, groupsFor, passesFilters } from "@/lib/views";
 import type { Parsed } from "@/lib/capture";
 import { cursorId, focusRow, keepCursor, moveCursor } from "@/lib/cursor";
@@ -23,6 +24,7 @@ import { Detail } from "./Detail";
 import { Icon } from "./icons";
 import { Insights } from "./Insights";
 import { ListView } from "./ListView";
+import { MeetingDetail, MeetingsGroup } from "./Meetings";
 import { TITLES } from "./nav";
 import { Palette, type PaletteAction } from "./Palette";
 import { Shortcuts } from "./Shortcuts";
@@ -57,11 +59,14 @@ export default function App({ mode, initial, email }: AppProps) {
   const store = useMemo(() => (mode === "supabase" ? supabaseStore() : demoStore()), [mode]);
   const { items, ready, revision, create, patch, remove, restore, attach, detach, reset, canReset } = useItems(store, initial, showToast);
 
+  const mt = useMeetings(store, showToast);
   const [mounted, setMounted] = useState(false);
   const [view, setView] = useState<ViewKey>("today");
   const [priorityFilter, setPriorityFilter] = useState(0);
   const [labelFilter, setLabelFilter] = useState("");
   const [selId, setSelId] = useState<string | null>(null);
+  // Sağ panelde ya bir öğe ya da bir toplantı açıktır.
+  const [meetId, setMeetId] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteTarget, setPaletteTarget] = useState<string | null>(null);
@@ -103,13 +108,28 @@ export default function App({ mode, initial, email }: AppProps) {
   useEffect(() => {
     if (selId && !selected) setSelId(null);
   }, [selId, selected]);
+  const meeting = mt.meetings.find((m) => m.id === meetId) ?? null;
+  useEffect(() => {
+    if (meetId && mt.ready && !meeting) setMeetId(null);
+  }, [meetId, meeting, mt.ready]);
+  const openItem = (id: string | null) => {
+    setSelId(id);
+    if (id) setMeetId(null);
+  };
+  const openMeeting = (id: string | null) => {
+    setMeetId(id);
+    if (id) setSelId(null);
+  };
 
   useEffect(() => {
     if (capturing) captureRef.current?.focus();
   }, [capturing]);
 
   const labelList = useMemo(() => labelCounts(items), [items]);
-  const known = useMemo(() => labelList.map(([n]) => n), [labelList]);
+  const known = useMemo(
+    () => [...new Set([...labelList.map(([n]) => n), ...mt.meetings.flatMap((m) => m.labels)])],
+    [labelList, mt.meetings],
+  );
   const counts = useMemo(() => countItems(items), [items]);
   const filters = useMemo(() => ({ priority: priorityFilter, label: labelFilter }), [priorityFilter, labelFilter]);
 
@@ -117,6 +137,7 @@ export default function App({ mode, initial, email }: AppProps) {
     setView(v);
     setLabelFilter("");
     setSelId(null);
+    setMeetId(null);
     contentRef.current?.scrollTo({ top: 0 });
   };
   const goLabel = (name: string) => {
@@ -124,6 +145,7 @@ export default function App({ mode, initial, email }: AppProps) {
     // Etiket filtresi bulunulan görünümün üzerine uygulanır; Inbox ve Analiz'de anlamı yok (paletten gelirse Tümü'ne geçilir).
     if (view === "inbox" || view === "insights") setView("all");
     setSelId(null);
+    setMeetId(null);
   };
 
   /** Kenar çubuğu: seçili etikete tekrar basınca filtre kalkar; başka etikete basınca onunla değişir. */
@@ -157,9 +179,10 @@ export default function App({ mode, initial, email }: AppProps) {
       if (e.key === "Escape") {
         if (shortcutsOpen) setShortcutsOpen(false);
         else if (capturing) closeCapture();
-        else if (selId) {
-          const id = selId;
+        else if (selId || meetId) {
+          const id = selId ?? meetId!;
           setSelId(null);
+          setMeetId(null);
           setTimeout(() => focusRow(id), 30);
         }
         return;
@@ -217,10 +240,16 @@ export default function App({ mode, initial, email }: AppProps) {
       }
       if (!id) return;
       // Notlar görev olmaz: tamamla, öncelik ve tarih kısayolları notlarda çalışmaz.
-      const noteRow = items.some((x) => x.id === id && isNote(x));
+      const meetingRow = mt.meetings.some((m) => m.id === id);
+      const noteRow = meetingRow || items.some((x) => x.id === id && isNote(x));
       if (key === "e") {
         e.preventDefault();
-        setSelId(id);
+        if (meetingRow) {
+          openMeeting(id);
+          setTimeout(() => document.querySelector<HTMLElement>(".detail .d-title")?.focus(), 60);
+          return;
+        }
+        openItem(id);
         setTimeout(() => document.querySelector<HTMLElement>(".detail .d-title")?.focus(), 60);
       } else if (!noteRow && (key === "x" || (key === " " && onRow))) {
         e.preventDefault();
@@ -373,6 +402,22 @@ export default function App({ mode, initial, email }: AppProps) {
     closeCapture();
   };
 
+  const createMeeting = (name: string, labels: string[]) => {
+    const id = crypto.randomUUID();
+    mt.create({ id, name, labels, createdAt: new Date().toISOString(), notes: [] });
+    openMeeting(id);
+    showToast(`“${name}” toplantısı oluşturuldu`);
+  };
+  const deleteMeeting = (id: string) => {
+    const removed = mt.remove(id);
+    setMeetId(null);
+    if (removed) showToast(`“${removed.name}” toplantısı silindi`, () => mt.restore(removed));
+  };
+  const removeMeetingNote = (meetingId: string, noteId: string) => {
+    const removed = mt.removeNote(meetingId, noteId);
+    if (removed) showToast("Toplantı notu silindi", () => mt.saveNote(meetingId, removed));
+  };
+
   if (!mounted || !ready) return null;
 
   // Palet eylemleri: imlecin olduğu öğeye uygulanır (öğe yoksa yalnızca genel olanlar).
@@ -395,7 +440,7 @@ export default function App({ mode, initial, email }: AppProps) {
     today: `${todayHeading()} · ${counts.today} açık${counts.late ? ` · ${counts.late} gecikmiş` : ""}`,
     upcoming: "Tarihe göre, önceliğe göre sıralı",
     all: `${counts.all} açık görev · ${counts.notes} not${labelFilter ? ` · @${labelFilter}` : ""}`,
-    notes: `${counts.notes} not · sabitlenenler üstte`,
+    notes: `${counts.notes} not · ${mt.meetings.length} toplantı · sabitlenenler üstte`,
     board: "Kartı sürükle ya da aç ve durumu seç",
     insights: "Tamamlananlar ve açık görevlerin özeti",
   };
@@ -405,7 +450,7 @@ export default function App({ mode, initial, email }: AppProps) {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className={`app ${selected ? "has-detail" : ""} ${capturing ? "capturing" : ""}`}>
+      <div className={`app ${selected || meeting ? "has-detail" : ""} ${capturing ? "capturing" : ""}`}>
         <Sidebar
           view={view}
           activeLabel={labelFilter}
@@ -417,7 +462,7 @@ export default function App({ mode, initial, email }: AppProps) {
           onLabel={toggleLabel}
           onSearch={openPalette}
           onShortcuts={() => setShortcutsOpen(true)}
-          onReset={canReset ? () => void reset().then(() => showToast("Örnek veri yenilendi")) : undefined}
+          onReset={canReset ? () => void reset().then(() => mt.reload()).then(() => showToast("Örnek veri yenilendi")) : undefined}
         />
 
         <main className="main">
@@ -462,25 +507,58 @@ export default function App({ mode, initial, email }: AppProps) {
                 items={items.filter((i) => passesFilters(i, filters))}
                 selId={selId}
                 fresh={fresh}
-                onOpen={setSelId}
+                onOpen={openItem}
                 onMove={setStatus}
               />
             ) : view === "insights" ? (
               <Insights items={items} store={store} revision={revision} />
             ) : (
+              <>
+              {view === "notes" && (
+                <MeetingsGroup
+                  meetings={labelFilter ? mt.meetings.filter((m) => m.labels.includes(labelFilter)) : mt.meetings}
+                  selId={meetId}
+                  known={known}
+                  onOpen={openMeeting}
+                  onCreate={createMeeting}
+                />
+              )}
               <ListView
                 groups={groupsFor(view, items, filters)}
                 view={view}
                 selId={selId}
                 fresh={fresh}
-                onOpen={setSelId}
+                onOpen={openItem}
                 onToggle={toggleDone}
                 onTriage={triage}
               />
+              </>
             )}
             </div>
           </div>
         </main>
+
+        {meeting && (
+          <motion.section
+            className="detail"
+            aria-label="Toplantı detayı"
+            initial={{ opacity: 0, x: 28 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={SPRING}
+          >
+            <MeetingDetail
+              key={meeting.id}
+              meeting={meeting}
+              knownLabels={known}
+              onClose={() => setMeetId(null)}
+              onRename={(id, name) => mt.update(id, { name })}
+              onLabels={(id, labels) => mt.update(id, { labels })}
+              onDelete={deleteMeeting}
+              onSaveNote={mt.saveNote}
+              onRemoveNote={removeMeetingNote}
+            />
+          </motion.section>
+        )}
 
         {selected && (
           <motion.section
@@ -523,7 +601,7 @@ export default function App({ mode, initial, email }: AppProps) {
             }}
             onView={goView}
             onLabel={goLabel}
-            onItem={(id) => setSelId(id)}
+            onItem={openItem}
           />
         )}
         {shortcutsOpen && <Shortcuts key="shortcuts" onClose={() => setShortcutsOpen(false)} />}

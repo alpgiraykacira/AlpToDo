@@ -77,3 +77,23 @@ export const PRIORITY_LABEL: Record<Exclude<Priority, 0>, string> = {
   3: "P3 · Normal",
   4: "P4 · Düşük",
 };
+
+/** Toplantının tarihli notu. `date` toplantının yapıldığı gün (YYYY-MM-DD, yerel tarih). */
+export interface MeetingNote {
+  id: string;
+  date: string;
+  body: string;
+  /** ISO zaman damgası; aynı güne düşen notları sıralamak için. */
+  createdAt: string;
+}
+
+/** Düzenli yapılan toplantı. Notlar `items` tablosundan ayrı tutulur. */
+export interface Meeting {
+  id: string;
+  name: string;
+  labels: string[];
+  createdAt: string;
+  notes: MeetingNote[];
+}
+
+export type MeetingPatch = Partial<Pick<Meeting, "name" | "labels">> & { deleted?: boolean };

@@ -1,7 +1,7 @@
 import { addDays } from "../dates";
 import { DONE_EVENT_KINDS, type DoneEvent } from "../insights";
 import { getBrowserClient } from "../supabase/client";
-import type { FileRef } from "../types";
+import type { FileRef, Meeting } from "../types";
 import type { Store } from "./types";
 import { patchToRow, rowToItem, type ItemRow } from "./rows";
 
@@ -11,6 +11,21 @@ interface EventRow {
   from_value: string | null;
   to_value: string | null;
   at: string;
+}
+
+interface MeetingRow {
+  id: string;
+  name: string;
+  labels: string[];
+  created_at: string;
+}
+
+interface MeetingNoteRow {
+  id: string;
+  meeting_id: string;
+  note_date: string;
+  body: string;
+  created_at: string;
 }
 
 const BUCKET = "attachments";
@@ -62,6 +77,44 @@ export function supabaseStore(): Store {
     },
     async removeFile(file) {
       const { error } = await sb.storage.from(BUCKET).remove([file.path]);
+      if (error) throw error;
+    },
+    async loadMeetings() {
+      const [m, n] = await Promise.all([
+        sb.from("meetings").select("id, name, labels, created_at").is("deleted_at", null).order("created_at", { ascending: false }).limit(500),
+        sb.from("meeting_notes").select("id, meeting_id, note_date, body, created_at").order("note_date", { ascending: false }).limit(5000),
+      ]);
+      if (m.error) throw m.error;
+      if (n.error) throw n.error;
+      const byId = new Map<string, Meeting>();
+      for (const r of m.data as MeetingRow[]) {
+        byId.set(r.id, { id: r.id, name: r.name, labels: r.labels, createdAt: r.created_at, notes: [] });
+      }
+      for (const r of n.data as MeetingNoteRow[]) {
+        byId.get(r.meeting_id)?.notes.push({ id: r.id, date: r.note_date, body: r.body, createdAt: r.created_at });
+      }
+      return [...byId.values()];
+    },
+    async createMeeting(meeting) {
+      const { error } = await sb.from("meetings").insert({ id: meeting.id, name: meeting.name, labels: meeting.labels });
+      if (error) throw error;
+    },
+    async updateMeeting(id, patch) {
+      const row: Record<string, unknown> = {};
+      if (patch.name !== undefined) row.name = patch.name;
+      if (patch.labels !== undefined) row.labels = patch.labels;
+      if (patch.deleted !== undefined) row.deleted_at = patch.deleted ? new Date().toISOString() : null;
+      const { error } = await sb.from("meetings").update(row).eq("id", id);
+      if (error) throw error;
+    },
+    async saveMeetingNote(meetingId, note) {
+      const { error } = await sb
+        .from("meeting_notes")
+        .upsert({ id: note.id, meeting_id: meetingId, note_date: note.date, body: note.body });
+      if (error) throw error;
+    },
+    async removeMeetingNote(id) {
+      const { error } = await sb.from("meeting_notes").delete().eq("id", id);
       if (error) throw error;
     },
     async doneHistory(weeks) {

@@ -26,6 +26,7 @@ grant select on storage.buckets to authenticated;
 \i supabase/migrations/20261027000000_init.sql
 \i supabase/migrations/20261028000000_recurrence.sql
 \i supabase/migrations/20261030000000_files.sql
+\i supabase/migrations/20261105000000_meetings.sql
 
 insert into auth.users values
   ('aaaaaaaa-0000-0000-0000-000000000001'),
@@ -226,8 +227,48 @@ begin
   exception when insufficient_privilege then null; end;
 end $$;
 
+-- Toplantı notları: sahip varsayılanı, sunucu zaman damgası, kısıtlar.
+insert into public.meetings (id, name, labels) values
+  ('33333333-3333-3333-3333-333333333333', 'Haftalık ekip', '{ekip}');
+insert into public.meeting_notes (id, meeting_id, note_date, body) values
+  ('44444444-4444-4444-4444-444444444444', '33333333-3333-3333-3333-333333333333', '2026-11-05', '- karar');
+do $$
+begin
+  assert (select user_id from public.meetings) = 'aaaaaaaa-0000-0000-0000-000000000001',
+    'meetings.user_id varsayılanı auth.uid() olmalı';
+  assert (select user_id from public.meeting_notes) = 'aaaaaaaa-0000-0000-0000-000000000001',
+    'meeting_notes.user_id varsayılanı auth.uid() olmalı';
+  begin insert into public.meetings (name) values (''); assert false, 'boş toplantı adı reddedilmeli';
+  exception when check_violation then null; end;
+end $$;
+update public.meeting_notes set body = '- karar 2', meeting_id = '33333333-3333-3333-3333-333333333333',
+  user_id = 'bbbbbbbb-0000-0000-0000-000000000002' where id = '44444444-4444-4444-4444-444444444444';
+do $$
+begin
+  assert (select user_id from public.meeting_notes) = 'aaaaaaaa-0000-0000-0000-000000000001',
+    'meeting_notes.user_id güncellemeyle değiştirilememeli';
+end $$;
+
 -- ---- Kullanıcı B: A'nın verisini görmemeli ---------------------------------
 select set_config('request.jwt.claim.sub', 'bbbbbbbb-0000-0000-0000-000000000002', false);
+
+do $$
+declare n int;
+begin
+  assert (select count(*) from public.meetings) = 0, 'B, A''nın toplantılarını görmemeli';
+  assert (select count(*) from public.meeting_notes) = 0, 'B, A''nın toplantı notlarını görmemeli';
+  update public.meeting_notes set body = 'ele geçirildi';
+  get diagnostics n = row_count;
+  assert n = 0, 'B, A''nın toplantı notunu güncelleyememeli';
+  delete from public.meetings;
+  get diagnostics n = row_count;
+  assert n = 0, 'B, A''nın toplantısını silememeli';
+  begin
+    insert into public.meeting_notes (meeting_id, note_date, body)
+      values ('33333333-3333-3333-3333-333333333333', '2026-11-06', 'sahte');
+    assert false, 'B, A''nın toplantısına not ekleyememeli';
+  exception when insufficient_privilege then null; end;
+end $$;
 
 do $$
 declare n int;
@@ -262,6 +303,10 @@ begin
   begin perform 1 from public.items; assert false, 'anon items okuyamamalı';
   exception when insufficient_privilege then null; end;
   begin perform 1 from public.item_events; assert false, 'anon item_events okuyamamalı';
+  exception when insufficient_privilege then null; end;
+  begin perform 1 from public.meetings; assert false, 'anon meetings okuyamamalı';
+  exception when insufficient_privilege then null; end;
+  begin perform 1 from public.meeting_notes; assert false, 'anon meeting_notes okuyamamalı';
   exception when insufficient_privilege then null; end;
   begin perform 1 from storage.objects; assert false, 'anon dosyaları okuyamamalı';
   exception when insufficient_privilege then null; end;
