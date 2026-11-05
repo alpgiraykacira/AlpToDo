@@ -27,7 +27,7 @@ img{max-width:100%}
   --ease:cubic-bezier(.16,1,.3,1);
 }
 @media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
+  :root:not([data-theme="light"]):not([data-theme="paper"]){
     --bg:#0A0D10;--surface:#13171C;--surface-2:#191E24;--line:#262C34;--fg:#E8ECF0;--muted:#8E98A6;
     --accent:#38C2B8;--accent-fg:#04201E;--accent-soft:#12302F;
     --p1:#FF6B73;--p2:#F2994A;--p3:#6FA1FF;--p4:#98A2B0;--shadow:rgba(0,0,0,.5);
@@ -382,7 +382,7 @@ select,input[type="date"]{background:var(--surface-2);border:1px solid var(--lin
 
 /* modern katman: aurora arka plan, cam yüzeyler, imleci izleyen ışık, parlayan odak */
 :root{--glow:rgba(11,122,117,.18);--glow-2:rgba(36,89,194,.14)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--glow:rgba(56,194,184,.16);--glow-2:rgba(111,161,255,.12)}}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]):not([data-theme="paper"]){--glow:rgba(56,194,184,.16);--glow-2:rgba(111,161,255,.12)}}
 :root[data-theme="dark"]{--glow:rgba(56,194,184,.16);--glow-2:rgba(111,161,255,.12)}
 body::before,body::after{content:"";position:fixed;z-index:-1;width:46vmax;height:46vmax;border-radius:50%;filter:blur(90px);pointer-events:none}
 body::before{top:-18vmax;left:-12vmax;background:var(--glow)}
@@ -452,3 +452,89 @@ body::after{right:-16vmax;bottom:-20vmax;background:var(--glow-2)}
 .mt-li.todo:hover .mt-box{background:var(--accent-soft)}
 .mt-li.todo.done .mt-box{background:var(--accent)}
 .mt-li.todo.done{color:var(--muted);text-decoration:line-through}
+
+/* Kâğıt teması: kırık beyaz kâğıt, kömür metin, tek sinyal turuncusu, ince çizgiler, köşesiz yüzeyler,
+   Geist Mono etiketler, grain dokusu ve köşe işaretleri. Aurora, cam ve ışık efektleri bu temada kapalı. */
+:root[data-theme="paper"]{
+  --bg:#E4E4DE;--surface:#F5F5F1;--surface-2:#ECECE6;--line:#D4D4CC;--fg:#282828;--muted:#62625F;
+  --accent:#D13200;--accent-fg:#FFFFFF;--accent-soft:#FBE7DF;
+  --signal:#FA3600; /* yalnızca yazı olmayan işaretler için (beyaz zeminde metne yetecek kontrastı yok) */
+  --p1:#A1121F;--p2:#8A5300;--p3:#2B4C9B;--p4:#6B6B68;--shadow:rgba(40,40,40,.14);
+  --font-display:'Geist Variable','Instrument Sans Variable',system-ui,sans-serif;
+  --font-mono:'Geist Mono','IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --ease:cubic-bezier(.23,1,.32,1);
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .16 0 0 0 0 .16 0 0 0 0 .15 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --glow:transparent;--glow-2:transparent;
+  color-scheme:light;
+}
+:root[data-theme="paper"] ::selection{background:var(--signal);color:#fff}
+
+/* zemin: aurora yerine sabit grain katmanı (tıklamayı engellemez) */
+:root[data-theme="paper"] body::before{display:none}
+:root[data-theme="paper"] body::after{display:block;inset:0;width:auto;height:auto;z-index:200;border-radius:0;filter:none;animation:none;background:var(--grain);opacity:.32;mix-blend-mode:multiply}
+:root[data-theme="paper"] .app,
+:root[data-theme="paper"] .side,
+:root[data-theme="paper"] .detail{backdrop-filter:none;box-shadow:none}
+:root[data-theme="paper"] .app{background:var(--surface)}
+:root[data-theme="paper"] .side{background:var(--surface-2)}
+:root[data-theme="paper"] .detail{background:var(--surface)}
+:root[data-theme="paper"] .brand svg{filter:none}
+
+/* köşesiz yüzeyler */
+:root[data-theme="paper"] :is(.app,.sbtn,.sbtn kbd,.side-foot kbd,.nav-hover,.nav-active,.nav .count.hot,.ib,.cap-box,.btn,.seg,.chip,.pchip,.sugg,.syn b,.tri button,.files li,.fthumb,.col,.card,.stat,.panel,.bar,.hb .track,.soon span,select,input[type="date"],.mini,.nhint,.md code,.md-edit,.lock,.pal-box,.pal-box li,.pal-hl,.toast,.chord,.keys-body kbd,.pr,.mt-new input,.mt-form,.mt-form textarea,.mt-ops button,.mt-add,.auth-card,.auth-card input,.auth-msg,.tabbar .bd,.fab){border-radius:0}
+:root[data-theme="paper"] .chk,:root[data-theme="paper"] .ring{border-radius:2px}
+:root[data-theme="paper"] .chk.on{box-shadow:none}
+
+/* gölgesiz: vurgu çizgiyle */
+:root[data-theme="paper"] .nav-active{box-shadow:0 0 0 1px var(--line)}
+:root[data-theme="paper"] .nav button[aria-current="page"]::before{content:"";position:absolute;left:-7px;top:50%;width:5px;height:5px;margin-top:-2.5px;background:var(--signal)}
+:root[data-theme="paper"] .cap-box:focus-within,
+:root[data-theme="paper"] .auth-card input:focus,
+:root[data-theme="paper"] .mt-new input:focus{box-shadow:none;border-color:var(--accent)}
+:root[data-theme="paper"] .card:hover{transform:none;box-shadow:none;border-color:var(--fg)}
+:root[data-theme="paper"] .btn:hover{background:var(--fg);color:var(--surface)}
+:root[data-theme="paper"] .pal{background:rgba(40,40,40,.32);backdrop-filter:none}
+:root[data-theme="paper"] .pal-box{backdrop-filter:none;background:var(--surface);box-shadow:0 0 0 1px var(--fg)}
+:root[data-theme="paper"] .toast,:root[data-theme="paper"] .chord{box-shadow:none}
+@media (max-width:959px){:root[data-theme="paper"] .detail{box-shadow:-1px 0 0 var(--fg)}}
+
+/* tipografi: büyük harf, sıkı başlıklar; sayaçlar köşeli parantezde; Detay alanları "ANAHTAR :" sütunu */
+:root[data-theme="paper"] .top h1,
+:root[data-theme="paper"] .brand,
+:root[data-theme="paper"] .auth-card h1{text-transform:uppercase;font-weight:600;letter-spacing:-.035em}
+:root[data-theme="paper"] .nav .count::before{content:"["}
+:root[data-theme="paper"] .nav .count::after{content:"]"}
+:root[data-theme="paper"] .nav .count.hot{background:none;color:var(--accent);padding:0;font-weight:600}
+:root[data-theme="paper"] .props>label,
+:root[data-theme="paper"] .props>.pl{font:500 11px var(--font-mono);letter-spacing:.06em;text-transform:uppercase}
+:root[data-theme="paper"] .props>label::after,
+:root[data-theme="paper"] .props>.pl::after{content:":";float:right}
+@media (min-width:960px) and (max-width:1179px){
+  :root[data-theme="paper"] .has-detail .nav .count::before,
+  :root[data-theme="paper"] .has-detail .nav .count::after{content:none}
+  :root[data-theme="paper"] .has-detail .nav .count.hot{background:var(--accent);color:var(--accent-fg);padding:0 4px}
+}
+
+/* teknik çizim dokunuşları: ana panelin köşelerinde + işaretleri, istatistik kutularında ızgara */
+@media (min-width:821px){
+  :root[data-theme="paper"] .main{position:relative}
+  :root[data-theme="paper"] .main::after{content:"";position:absolute;inset:6px;pointer-events:none;z-index:1;--m:color-mix(in srgb,var(--fg) 45%,transparent);
+    background:
+      linear-gradient(var(--m),var(--m)) left 0 top 4px/9px 1px no-repeat,linear-gradient(var(--m),var(--m)) left 4px top 0/1px 9px no-repeat,
+      linear-gradient(var(--m),var(--m)) right 0 top 4px/9px 1px no-repeat,linear-gradient(var(--m),var(--m)) right 4px top 0/1px 9px no-repeat,
+      linear-gradient(var(--m),var(--m)) left 0 bottom 4px/9px 1px no-repeat,linear-gradient(var(--m),var(--m)) left 4px bottom 0/1px 9px no-repeat,
+      linear-gradient(var(--m),var(--m)) right 0 bottom 4px/9px 1px no-repeat,linear-gradient(var(--m),var(--m)) right 4px bottom 0/1px 9px no-repeat}
+}
+:root[data-theme="paper"] .stat::before,
+:root[data-theme="paper"] .panel::before{background:
+  linear-gradient(color-mix(in srgb,var(--line) 70%,transparent) 1px,transparent 1px) center/16px 16px,
+  linear-gradient(90deg,color-mix(in srgb,var(--line) 70%,transparent) 1px,transparent 1px) center/16px 16px}
+:root[data-theme="paper"] .bar{background:color-mix(in srgb,var(--fg) 16%,var(--surface))}
+:root[data-theme="paper"] .bar.cur{background:var(--signal)}
+
+/* toplantı zaman çizelgesi: noktalar kare, çizgi ince */
+:root[data-theme="paper"] .mt-stack::before{width:1px;left:4.5px}
+:root[data-theme="paper"] .mt-snap::before{border-radius:0;width:9px;height:9px;border-width:1px}
+:root[data-theme="paper"] .mt-snap:first-child::before{background:var(--signal);border-color:var(--signal)}
+:root[data-theme="paper"] .mt-li.li::before{border-radius:0}
+:root[data-theme="paper"] .mt-box{border-radius:0}

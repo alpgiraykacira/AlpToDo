@@ -3,6 +3,10 @@ import "@fontsource-variable/bricolage-grotesque";
 import "@fontsource-variable/instrument-sans";
 import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
+// Kâğıt teması (yalnızca o tema seçiliyken indirilir)
+import "@fontsource-variable/geist";
+import "@fontsource/geist-mono/400.css";
+import "@fontsource/geist-mono/500.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -24,7 +28,7 @@ export const viewport: Viewport = {
 };
 
 // Tema tercihi ilk boyamadan önce uygulanır (yanıp sönmeyi önler).
-const themeScript = `try{var t=localStorage.getItem('sira.theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}`;
+const themeScript = `try{var t=localStorage.getItem('sira.theme');if(t==='dark'||t==='light'||t==='paper')document.documentElement.dataset.theme=t}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

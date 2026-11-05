@@ -112,6 +112,10 @@ Veri katmanı `Store` arayüzünün arkasında; bileşenler Supabase'i doğrudan
 - **Hydration:** `App` içeriği yalnızca tarayıcıda çizilir (`mounted` kapısı), çünkü "Bugün/Dün" gibi
   etiketler sunucu ile tarayıcı saat diliminde farklı çıkabilir. Kaldırma.
 - **Yazı tipleri** `@fontsource` paketleriyle yerelden sunulur (üçüncü taraf istek yok, build ağa bağlı değil).
+- **Temalar:** açık, koyu, kâğıt (`data-theme="paper"`); üst çubuktaki düğme sırayla değiştirir, tercih `sira.theme`.
+  Kâğıt teması yalnızca `globals.css` sonundaki blokta (renkler, köşesiz yüzeyler, Geist/Geist Mono, grain, köşe
+  işaretleri); aurora/cam/ışık efektlerini kapatır. Sistem koyu moddayken de açık kalır (koyu kurallar `paper`'ı dışlar).
+  `--signal` (#FA3600) metinde kontrastı yetmediği için yalnızca işaretlerde; metin vurgusu `--accent`.
 
 - **Dosya ekleri:** `items.files` (jsonb üst veri: id, ad, tür, boyut, yol); içerik Supabase Storage'daki özel
   `attachments` kovasında, yol `<user_id>/<öğe>/<dosya>`, Storage RLS ilk parçayı `auth.uid()` ile eşler.

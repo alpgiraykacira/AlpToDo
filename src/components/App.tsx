@@ -21,7 +21,7 @@ import { Capture } from "./Capture";
 import { Clock } from "./Clock";
 import { NoteCapture, type NoteDraft } from "./NoteCapture";
 import { Detail } from "./Detail";
-import { Icon } from "./icons";
+import { Icon, type IconName } from "./icons";
 import { Insights } from "./Insights";
 import { ListView } from "./ListView";
 import { MeetingDetail, MeetingsGroup } from "./Meetings";
@@ -36,6 +36,13 @@ interface AppProps {
   initial?: Item[];
   email?: string;
 }
+
+/** Tema sırası; tercih `sira.theme` anahtarında, ilk boyamadan önce layout.tsx uygular. */
+const THEMES = ["light", "dark", "paper"] as const;
+type Theme = (typeof THEMES)[number];
+const THEME_NAMES: Record<Theme, string> = { light: "Açık", dark: "Koyu", paper: "Kâğıt" };
+/** Düğmedeki simge, tıklanınca gelecek temayı gösterir. */
+const THEME_ICONS: Record<Theme, IconName> = { light: "moon", dark: "paper", paper: "lightsun" };
 
 /** g'den sonra basılan harf → görünüm. */
 const G_VIEWS: Record<string, ViewKey> = {
@@ -82,7 +89,7 @@ export default function App({ mode, initial, email }: AppProps) {
   };
   const gPending = useRef(false);
   const gTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const [dark, setDark] = useState(false);
+  const [theme, setTheme] = useState<Theme>("light");
   const captureRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -90,18 +97,19 @@ export default function App({ mode, initial, email }: AppProps) {
   useEffect(() => {
     setMounted(true);
     const t = document.documentElement.dataset.theme;
-    setDark(t ? t === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches);
+    setTheme(THEMES.includes(t as Theme) ? (t as Theme) : window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
   }, []);
 
+  // Sırayla: açık → koyu → kâğıt → açık.
   const toggleTheme = () => {
-    const next = dark ? "light" : "dark";
+    const next = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
     document.documentElement.dataset.theme = next;
     try {
       localStorage.setItem("sira.theme", next);
     } catch {
       /* tercih kalıcı olmaz */
     }
-    setDark(!dark);
+    setTheme(next);
   };
 
   const selected = items.find((i) => i.id === selId) ?? null;
@@ -474,8 +482,8 @@ export default function App({ mode, initial, email }: AppProps) {
             <button className="ib mob-only" aria-label="Analiz" onClick={() => goView("insights")}><Icon n="chart" s={20} /></button>
             <button className="ib srch" aria-label="Ara" onClick={openPalette}><Icon n="search" s={20} /></button>
             <Clock />
-            <button className="ib" aria-label="Temayı değiştir" onClick={toggleTheme}>
-              <Icon n={dark ? "lightsun" : "moon"} />
+            <button className="ib" aria-label={`Tema: ${THEME_NAMES[theme]} (değiştir)`} title={`Tema: ${THEME_NAMES[theme]}`} onClick={toggleTheme}>
+              <Icon n={THEME_ICONS[theme]} />
             </button>
           </header>
 
