@@ -250,7 +250,7 @@ select,input[type="date"]{background:var(--surface-2);border:1px solid var(--lin
 .ck{display:flex;gap:10px;align-items:flex-start;padding:5px 0}
 .ck input{margin-top:3px;accent-color:var(--accent)}
 .ck.d .cktext{color:var(--muted);text-decoration:line-through}
-.cktext{flex:1;min-width:0;border:0;border-bottom:1px solid transparent;background:none;outline:none;padding:0;font:inherit;color:inherit}
+.cktext{flex:1;min-width:0;resize:none;overflow:hidden;display:block;line-height:1.4;border:0;border-bottom:1px solid transparent;background:none;outline:none;padding:0;font:inherit;color:inherit}
 .cktext:focus{border-color:var(--accent)}
 .ckdel{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:0 4px;opacity:0}
 .ck:hover .ckdel,.ckdel:focus-visible{opacity:1}

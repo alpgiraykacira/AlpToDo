@@ -29,7 +29,15 @@ function CheckRow({ text, done, onToggle, onEdit, onRemove }: {
   onRemove: () => void;
 }) {
   const [draft, setDraft] = useState(text);
+  const ta = useRef<HTMLTextAreaElement>(null);
   useEffect(() => setDraft(text), [text]);
+  // Uzun maddeler kesilmesin: yükseklik içeriğe göre büyür.
+  useLayoutEffect(() => {
+    const el = ta.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [draft]);
   const commit = () => {
     const t = draft.trim();
     if (!t) onRemove();
@@ -39,8 +47,10 @@ function CheckRow({ text, done, onToggle, onEdit, onRemove }: {
   return (
     <div className={`ck ${done ? "d" : ""}`}>
       <input type="checkbox" checked={done} onChange={(e) => onToggle(e.target.checked)} aria-label="Tamamlandı" />
-      <input
+      <textarea
+        ref={ta}
         className="cktext"
+        rows={1}
         value={draft}
         aria-label="Madde metni"
         onChange={(e) => setDraft(e.target.value)}
