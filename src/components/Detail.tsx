@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { addDays, fmtTimestamp } from "@/lib/dates";
 import { canonicalLabel } from "@/lib/labels";
 import { DEFAULT_RULE } from "@/lib/recurrence";
@@ -19,6 +19,44 @@ import {
 } from "@/lib/types";
 import { droppedFiles, FileList, FilePicker, hasFiles, pastedFiles, type OpenFile } from "./Attachments";
 import { Icon } from "./icons";
+
+/** Alt madde satırı: metin yerinde düzenlenir (Enter/odak kaybında kaydolur, Esc vazgeçer); boşaltılırsa madde silinir. */
+function CheckRow({ text, done, onToggle, onEdit, onRemove }: {
+  text: string;
+  done: boolean;
+  onToggle: (d: boolean) => void;
+  onEdit: (t: string) => void;
+  onRemove: () => void;
+}) {
+  const [draft, setDraft] = useState(text);
+  useEffect(() => setDraft(text), [text]);
+  const commit = () => {
+    const t = draft.trim();
+    if (!t) onRemove();
+    else if (t !== text) onEdit(t);
+    else setDraft(text);
+  };
+  return (
+    <div className={`ck ${done ? "d" : ""}`}>
+      <input type="checkbox" checked={done} onChange={(e) => onToggle(e.target.checked)} aria-label="Tamamlandı" />
+      <input
+        className="cktext"
+        value={draft}
+        aria-label="Madde metni"
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+          else if (e.key === "Escape") {
+            setDraft(text);
+            e.currentTarget.blur();
+          }
+        }}
+      />
+      <button className="ckdel" onClick={onRemove} aria-label="Maddeyi sil" type="button">×</button>
+    </div>
+  );
+}
 
 export type PatchFn = (id: string, patch: LocalPatch, opts?: { debounced?: boolean }) => void;
 
@@ -288,16 +326,14 @@ export function Detail({ item, knownLabels, onPatch, onStatus, onClose, onDelete
             <span>{item.checklist.length ? `${doneCount}/${item.checklist.length}` : ""}</span>
           </h4>
           {item.checklist.map((c, k) => (
-            <label key={k} className={`ck ${c.d ? "d" : ""}`}>
-              <input
-                type="checkbox"
-                checked={c.d}
-                onChange={(e) =>
-                  onPatch(item.id, { checklist: item.checklist.map((x, j) => (j === k ? { ...x, d: e.target.checked } : x)) })
-                }
-              />
-              <span>{c.t}</span>
-            </label>
+            <CheckRow
+              key={k}
+              text={c.t}
+              done={c.d}
+              onToggle={(d) => onPatch(item.id, { checklist: item.checklist.map((x, j) => (j === k ? { ...x, d } : x)) })}
+              onEdit={(t) => onPatch(item.id, { checklist: item.checklist.map((x, j) => (j === k ? { ...x, t } : x)) })}
+              onRemove={() => onPatch(item.id, { checklist: item.checklist.filter((_, j) => j !== k) })}
+            />
           ))}
           <input
             className="ckadd"
